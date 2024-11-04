@@ -41,8 +41,8 @@ def send_commands_to_minecraft():
             for command in command_file:
                 command = command.strip()  # Remove any trailing whitespace or newline
                 if command:
-                    response = mcr.command(command)  # Send the command to the server
-                    print(f"Executed: {command}\n\nServer Response: {response}")
+                    mcr.command(command)  # Send the command to the server
+                    print(f"Executed: {command}\nServer Response: ", end="")
 
 def send_cmd_str(command: str):
     # Connect to the Minecraft server via RCON
@@ -51,7 +51,7 @@ def send_cmd_str(command: str):
         cmd = command.strip()  # Remove any trailing whitespace or newline
         if cmd:
             response = mcr.command(cmd)  # Send the command to the server
-            print(f"Executed: {cmd}\n\nServer Response: {response}")
+            print(f"\nExecuted:\n{cmd}\n\nServer Response: ")
             return response
     return None
 

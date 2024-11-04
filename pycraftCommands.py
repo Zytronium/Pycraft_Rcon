@@ -2,7 +2,6 @@
 """Module for python functions that perform Minecraft commands and send them to a running minecraft server via rcon"""
 import random
 import re
-from itertools import count
 from random import randint
 from time import sleep
 from numbers import Number
@@ -127,6 +126,15 @@ def smite(entity: str):
     """
     x, y, z = get_entity_coordinates(entity)
     return send_cmd_str(f"/summon minecraft:lightning_bolt {x} {y} {z}")
+
+def smite_all():
+    """
+    strikes every player with a bolt of lightning.
+    That'll teach them to behave! Bow before your leader!
+    :return: command output
+    """
+    for player in get_player_list():
+        smite(player)
 
 def explode(entity: str):
     """
