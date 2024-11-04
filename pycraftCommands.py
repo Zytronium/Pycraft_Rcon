@@ -8,13 +8,33 @@ from numbers import Number
 from sendToServer import send_cmd_str
 
 
-def printmc(msg: str = ""):
+def fancy_text(text: str = "", color: str = "white", bold: bool = False, itallic: bool = False, underlined: bool = False, strikethrough: bool = False, obfuscated: bool = False):
     """
-    sends a message to the server chat using /say command
+    returns the formatted Json text version of the given text.
+    Support for links and other fun stuff coming soon. Maybe.
+    :param text: text to format
+    :param color: color to give it.
+    :param bold: set as true to make text bold
+    :param itallic: set as true to make text italic
+    :param underlined: set as true to make text underlined
+    :param strikethrough: set as true to make text strikethrough
+    :param obfuscated: set as true to make text obfuscated
+    :return: fancy formatted text
+    """
+    return f"{{\"text\":\"{text}\",\"color\":\"{color}\",\"bold\":{bold},\"italic\":{itallic},\"underlined\":{underlined},\"strikethrough\":{strikethrough},\"obfuscated\":{obfuscated}}}"
+
+
+def printmc(msg: str = "", color: str = "white", bold: bool = False, itallic: bool = False, underlined: bool = False, strikethrough: bool = False, obfuscated: bool = False):
+    """
+    Sends a message to the server chat using /tellraw command.
     :param msg: message to send to chat
     :return: /say command output
     """
-    return send_cmd_str(f"/say {msg}")
+    if color != "white" or bold or itallic or underlined or strikethrough or obfuscated:
+        return send_cmd_str(f"/tellraw @a {fancy_text(msg, color, bold, itallic, underlined, strikethrough, obfuscated)}")
+    else:
+        return send_cmd_str(f"/tellraw @a \"{msg}\"")
+
 
 def give(player: str, item: str,  amount: int = 1, item_data: str = "", item_prefix: str = "minecraft:"):
     """
@@ -263,5 +283,29 @@ def troll_all_players():
     give("@r", "rotten_flesh", 64)
 
 
+from time import sleep
+
+
+def self_destruct(countdown: int = 10):
+    # Ensure countdown is at least 1 second
+    if countdown < 1:
+        raise ValueError("Countdown must be a positive number.")
+
+    # Warning message
+    printmc("WARNING: THE SERVER\'S SELF DESTRUCT SEQUENCE HAS BEEN ACTIVATED. THE SERVER WILL SHUT DOWN IN...", "red", True)
+
+    # Countdown sequence
+    while countdown > 0:
+        color = "yellow" if countdown >= 5 else "red"
+        printmc(countdown, color)
+        countdown -= 1
+        sleep(1)
+
+    # Shutdown message
+    printmc("Shutting down server...","gray")
+    sleep(0.125)
+    send_cmd_str("/stop")
+
+
 if __name__ == '__main__':
-    printmc("Hello world!")
+    printmc("Hello world!", "gold", True)
