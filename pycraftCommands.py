@@ -23,7 +23,6 @@ def fancy_text(text: str = "", color: str = "white", bold: bool = False, itallic
     """
     return f"{{\"text\":\"{text}\",\"color\":\"{color}\",\"bold\":{bold},\"italic\":{itallic},\"underlined\":{underlined},\"strikethrough\":{strikethrough},\"obfuscated\":{obfuscated}}}"
 
-
 def printmc(msg: str = "", color: str = "white", bold: bool = False, itallic: bool = False, underlined: bool = False, strikethrough: bool = False, obfuscated: bool = False):
     """
     Sends a message to the server chat using /tellraw command.
@@ -34,7 +33,6 @@ def printmc(msg: str = "", color: str = "white", bold: bool = False, itallic: bo
         return send_cmd_str(f"/tellraw @a {fancy_text(msg, color, bold, itallic, underlined, strikethrough, obfuscated)}")
     else:
         return send_cmd_str(f"/tellraw @a \"{msg}\"")
-
 
 def give(player: str, item: str,  amount: int = 1, item_data: str = "", item_prefix: str = "minecraft:"):
     """
@@ -136,6 +134,79 @@ def execute(entity: str, command: str, *args, **kwargs):
     # Final command
     final_command = f"/execute as {entity} run {command_str}"
     return send_cmd_str(final_command)
+
+def set_weather(type: str, duration: int = None, duration_unit: str = ""):
+    """
+    Sets the weather to the specified type for the given duration.
+    :param type: type of weather to set
+    :param duration: duration to keep the weather at. Or blank
+    :param duration_unit: Unit of time for duration. "t" (ticks) is default if left blank
+    :return: command output
+    """
+    # ensure weather type is valid
+    if type not in ["clear", "rain", "thunder"]:
+        raise ValueError("Invalid weather type. Type must be \"clear\", \"rain\", or \"thunder\"")
+    # ensure duration given is a positive integer
+    if duration is not None and duration <= 0:
+        raise ValueError("Invalid duration. Duration must be greater than 0")
+    # ensure duration unit is valid
+    if duration_unit.lower() not in ["", "t", "s", "d"]:
+        raise ValueError("Invalid duration unit. Duration unit must be \"t\" (ticks), \"s\" (seconds), or \"d\" (days)\"")
+
+    return send_cmd_str(f"/weather {type} {duration if duration is not None else ''}{duration_unit.lower() if duration is not None else ''}")
+
+def summon(entity_type: str, *args, custom_prefix: str = "minecraft:", custom_data: dict = None, amount: int = 1, **kwargs):
+    """
+    Summons an entity at specified coordinates or at a given entity's position.
+
+    :param entity_type: The type of entity to summon (e.g., 'creeper').
+    :param args: Either a single entity (UUID, player name, or selector) or x, y, z coordinates.
+    :param custom_prefix: Optional custom prefix for the entity (default is "minecraft:").
+    :param custom_data: Optional custom entity data as a dictionary.
+    :param amount: The number of entities to spawn (default is 1).
+    :param kwargs: Optional keyword arguments for additional flexibility (e.g., tags or other data).
+    :return: The command string used to summon the entity.
+    """
+    # Automatically handle the prefix
+    entity_type = f"{custom_prefix}{entity_type}"
+
+    # Check if args length is valid
+    if len(args) == 1:
+        target_entity = args[0]
+        x, y, z = get_entity_coordinates(target_entity)
+        if x is None or y is None or z is None:
+            print("Entity not found or invalid coordinates.")
+            return None
+    elif len(args) == 3:
+        x, y, z = args
+    else:
+        print("Invalid arguments: Provide either a single target entity or x, y, z coordinates.")
+        return None
+
+    # Build the summon command
+    summon_command = f"/summon {entity_type} {x} {y} {z}"
+
+    # Handle custom entity data if provided
+    if custom_data:
+        data_tags = ', '.join(f'{key}:{value}' for key, value in custom_data.items())
+        summon_command += f" {{{data_tags}}}"
+
+    # Add any additional kwargs as data tags if provided
+    if kwargs:
+        data_tags = ', '.join(f'{key}:{value}' for key, value in kwargs.items())
+        summon_command += f" {{{data_tags}}}"
+
+    # Run the command multiple times if amount > 1
+    commands = []
+    for _ in range(amount):
+        commands.append(summon_command)
+
+    for command in commands:
+        print(f"Executing command: {command}")
+        # Here, you would typically send the command to the server
+        send_cmd_str(command)
+
+    return commands
 
 def smite(entity: str):
     """
@@ -282,10 +353,6 @@ def troll_all_players():
          "[minecraft:item_name='{\"text\":\"Death Apple\"}',minecraft:item_model=enchanted_golden_apple,minecraft:enchantment_glint_override=true,minecraft:rarity=rare]")
     give("@r", "rotten_flesh", 64)
 
-
-from time import sleep
-
-
 def self_destruct(countdown: int = 10):
     # Ensure countdown is at least 1 second
     if countdown < 1:
@@ -308,4 +375,4 @@ def self_destruct(countdown: int = 10):
 
 
 if __name__ == '__main__':
-    printmc("Hello world!", "gold", True)
+    printmc("Test 123", "gold", True)
