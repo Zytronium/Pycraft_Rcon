@@ -214,8 +214,11 @@ def execute(entity: str, command: str, *args, **kwargs):
     final_command = f"/execute as {entity} run {command_str}"
     return send_cmd_str(final_command)
 
-def spread_players(radius: int = 1000000):
+def spread_players(radius: int = 1000000, give_regen: bool = False):
     send_cmd_str("/effect give @a minecraft:resistance 25 255")
+    if give_regen:
+        send_cmd_str("/effect give @a minecraft:instant_health 255")
+        send_cmd_str("/effect give @a minecraft:saturation 255")
     player_list = get_player_list()
 
     # Initial teleport to random high altitude within the specified radius
