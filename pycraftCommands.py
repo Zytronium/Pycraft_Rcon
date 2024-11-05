@@ -82,6 +82,78 @@ def teleport(entity: str, *args, **kwargs):
     else:
         raise ValueError("Invalid arguments for teleport function")
 
+def swap(entity1: str, entity2: str):
+    """
+    Swaps the positions of two given entities using the /teleport command.
+    :param entity1: first entity UUID or player name
+    :param entity2: second entity UUID or player name
+    """
+    at_r_used = False
+
+    # safely set entity1 as a random player if @r was used
+    if entity1 == "@r":
+        at_r_used = True
+        entity1 = get_random_player()
+    # safely set entity2 as a random player if @r was used
+    if entity2 == "@r":
+        at_r_used = True
+        entity2 = get_random_player()
+
+    # ensure @a is not used
+    if "@a" in [entity1, entity2]:
+        raise ValueError("Cannot use @a for this operation. If you wish to swap all players randomly, try swap_all_players()")
+    # ensure @e is not used
+    if "@e" in [entity1, entity2]:
+        raise ValueError("Cannot use @e for this operation.")
+
+    # if @r was used for either entity, the same player was chosen for both entities, and more than 1 player are online:
+    if at_r_used and len(get_player_list()) > 1 and entity1 == entity2:
+        # reroll entity2 until it's not the same player as entity1
+        while entity1 == entity2:
+            entity2 = get_random_player()
+
+    # get coords for entity1
+    entity_1_pos_x, entity_1_pos_y, entity_1_pos_z = get_entity_coordinates(entity1)
+    # coords for entity 2 are not needed
+
+    # teleport entity1 to entity2
+    teleport(entity1, entity2)
+    # teleport entity2 to entity1's original coordinates
+    teleport(entity2, entity_1_pos_x, entity_1_pos_y, entity_1_pos_z)
+
+def swap_all_players():
+    """
+    Swaps each player's position with another player's position, ensuring that each player is swapped
+    exactly once. If there's an odd number of players, the last player will be swapped with a random
+    player from the list.
+    :return: dict of every player who swapped and who they swapped with
+    """
+    player_list = get_player_list()
+    random.shuffle(player_list)
+    swap_dict = {}
+
+    # If there's an odd number of players, set aside the last player
+    if len(player_list) % 2 != 0:
+        last_player = player_list.pop()
+    else:
+        last_player = None
+
+    # Pair up players and swap them
+    for i in range(0, len(player_list), 2):
+        player1, player2 = player_list[i], player_list[i + 1]
+        swap(player1, player2)
+        swap_dict[player1] = player2
+        swap_dict[player2] = player1
+
+    # If there was an odd player out, swap them with a random player from the paired list
+    if last_player:
+        random_player = random.choice(player_list)
+        swap(last_player, random_player)
+        swap_dict[last_player] = random_player
+        swap_dict[random_player] = last_player
+
+    return swap_dict
+
 def display(player: str, text: str, type: str):
     """
 
@@ -134,6 +206,97 @@ def execute(entity: str, command: str, *args, **kwargs):
     # Final command
     final_command = f"/execute as {entity} run {command_str}"
     return send_cmd_str(final_command)
+
+
+def get_player_coordinates_plan_b(player: str):
+    output = teleport(player, player)
+    a, b, c = get_entity_coordinates(player)
+    printmc(a, b, c)
+    return 0, 64, 0
+
+
+def spread_players(radius: int = 1000000):
+    send_cmd_str("/effect give @a minecraft:resistance 25 255")
+    player_list = get_player_list()
+
+    # Initial teleport to random high altitude within the specified radius
+    for player in player_list:
+        x = randint(-radius, radius)
+        y = 319
+        z = randint(-radius, radius)
+        teleport(player, x, y, z)
+        # printmc(f"Setting spawnpoint for {player} to {int(x)} {50} {int(z)}")
+        # send_cmd_str(f"/spawnpoint {player} {int(x)} {50} {int(z)}")
+
+
+    # sleep(10)  # Increase delay if needed to ensure all players have teleported
+    #
+    # # Wait until all players have valid coordinates
+    # success = False
+    # fail_count = 0
+    # while not success:
+    #     success = True
+    #     for player in player_list:
+    #         try:
+    #             # Attempt to get coordinates and retry if None is returned
+    #             coords = get_entity_coordinates(player)
+    #             if coords is None:
+    #                 success = False
+    #                 fail_count += 1
+    #                 continue
+    #             x2, y2, z2 = coords
+    #         except TypeError as e:
+    #             success = False
+    #             fail_count += 1
+    #
+    #     if not success:
+    #         if fail_count >= 1 * len(player_list):
+    #             a, b, c = get_player_coordinates_plan_b(player)
+    #             send_cmd_str(f"/spawnpoint {player}, {a}, {b}, {c}")
+    #         else:
+    #             sleep(3)  # Wait before retrying
+    #
+    # printmc("setting spawnpoints")
+    #
+    # # Set spawnpoint for each player at their current location
+    # for player in player_list:
+    #     coords = get_player_coordinates_plan_b(player)
+    #     if coords:
+    #         x2, y2, z2 = coords
+    #         send_cmd_str(f"/spawnpoint {player} {int(x2)} {int(y2)} {int(z2)}")
+
+def op(player: str):
+    """
+    Makes then given player a server operator. This is a risky operation.
+    :param player: name of player to grant operator permissions
+    :return: /op command output
+    """
+    while True:
+        user_input = input(
+            f"Are you sure you want to op {player}? " +
+            "This is a risky operation. [Y/N]: ").lower().strip()
+
+        if user_input == "y":
+            output = send_cmd_str(f"/op {player}")
+            print(output)
+            return output
+
+        elif user_input == "n":
+            print("Operation canceled.")
+            return
+
+        else:
+            print("Invalid input. Please enter 'Y' or 'N'.")
+
+def deop(player: str):
+    """
+    Makes then given player no longer a server operator.
+    :param player: name of player to revoke operator permissions
+    :return: /deop command output
+    """
+    output = send_cmd_str(f"/deop {player}")
+    print(output)
+    return output
 
 def set_weather(type: str, duration: int = None, duration_unit: str = ""):
     """
@@ -321,6 +484,7 @@ def get_entity_coordinates(entity: str):
     """
     # Run the command to get the entity's position
     output = send_cmd_str(f"/data get entity {entity} Pos")
+    printmc(entity)
 
     # Use regex to extract the three floating-point coordinates from the output
     match = re.search(r'\[([\d\.\-]+)d, ([\d\.\-]+)d, ([\d\.\-]+)d\]', output)
