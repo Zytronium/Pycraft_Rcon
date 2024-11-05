@@ -115,6 +115,7 @@ def swap(entity1: str, entity2: str, announceSwapPartners: bool = False):
 
     # get coords for entity1
     entity_1_pos_x, entity_1_pos_y, entity_1_pos_z = get_entity_coordinates(entity1)
+    entity_1_dimension = get_entity_dimension(entity1)
     # coords for entity 2 are not needed
 
     if announceSwapPartners:
@@ -122,8 +123,9 @@ def swap(entity1: str, entity2: str, announceSwapPartners: bool = False):
 
     # teleport entity1 to entity2
     teleport(entity1, entity2)
-    # teleport entity2 to entity1's original coordinates
-    teleport(entity2, entity_1_pos_x, entity_1_pos_y, entity_1_pos_z)
+    # Teleport entity2 to entity1's position and dimension
+    send_cmd_str(
+        f"/execute in {entity_1_dimension} run tp {entity2} {entity_1_pos_x} {entity_1_pos_y} {entity_1_pos_z}")
 
 def swap_all_players(announce_swap_partners: bool = False):
     """
