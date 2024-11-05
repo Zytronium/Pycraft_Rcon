@@ -82,11 +82,12 @@ def teleport(entity: str, *args, **kwargs):
     else:
         raise ValueError("Invalid arguments for teleport function")
 
-def swap(entity1: str, entity2: str, announceSwap: bool = False):
+def swap(entity1: str, entity2: str, announceSwapPartners: bool = False):
     """
     Swaps the positions of two given entities using the /teleport command.
     :param entity1: first entity UUID or player name
     :param entity2: second entity UUID or player name
+    :param announceSwapPartners: whether to announce who is swapping with who
     """
     at_r_used = False
 
@@ -116,7 +117,7 @@ def swap(entity1: str, entity2: str, announceSwap: bool = False):
     entity_1_pos_x, entity_1_pos_y, entity_1_pos_z = get_entity_coordinates(entity1)
     # coords for entity 2 are not needed
 
-    if announceSwap:
+    if announceSwapPartners:
         printmc(f"Swapping {entity1} with {entity2}...", "dark_green", False, True)
 
     # teleport entity1 to entity2
@@ -124,11 +125,12 @@ def swap(entity1: str, entity2: str, announceSwap: bool = False):
     # teleport entity2 to entity1's original coordinates
     teleport(entity2, entity_1_pos_x, entity_1_pos_y, entity_1_pos_z)
 
-def swap_all_players(announce_swaps: bool = False):
+def swap_all_players(announce_swap_partners: bool = False):
     """
     Swaps each player's position with another player's position, ensuring that each player is swapped
     exactly once. If there's an odd number of players, the last player will be swapped with a random
     player from the list.
+    :param announce_swap_partners: whether to announce who is swapping with who
     :return: dict of every player who swapped and who they swapped with
     """
     player_list = get_player_list()
@@ -144,14 +146,14 @@ def swap_all_players(announce_swaps: bool = False):
     # Pair up players and swap them
     for i in range(0, len(player_list), 2):
         player1, player2 = player_list[i], player_list[i + 1]
-        swap(player1, player2, announce_swaps)
+        swap(player1, player2, announce_swap_partners)
         swap_dict[player1] = player2
         swap_dict[player2] = player1
 
     # If there was an odd player out, swap them with a random player from the paired list
     if last_player:
         random_player = random.choice(player_list)
-        swap(last_player, random_player, announce_swaps)
+        swap(last_player, random_player, announce_swap_partners)
         swap_dict[last_player] = random_player
         swap_dict[random_player] = last_player
 
