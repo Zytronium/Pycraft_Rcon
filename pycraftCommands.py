@@ -230,6 +230,29 @@ def spread_players(radius: int = 1000000, give_regen: bool = False):
         # printmc(f"Setting spawnpoint for {player} to {int(x)} {50} {int(z)}")
         # send_cmd_str(f"/spawnpoint {player} {int(x)} {50} {int(z)}")
 
+def clear_all(override_confirmation: bool = False):
+    """
+    Clears the inventories of all players.
+    :return: command output
+    """
+    if not override_confirmation:
+        # confirm clear all inventories
+        user_input = input(
+            f"Are you sure you want to clear ALL players' inventories? " +
+            "This is a risky operation. [Y/N]: ").lower().strip()
+
+        # clear all inventories
+        if user_input == 'y':
+            return send_cmd_str("/clear @a")
+
+        # abort
+        elif user_input == "n":
+            print("Operation canceled.")
+            return
+
+    # else if override is True, skip confirmation and clear all inventories
+    return send_cmd_str("/clear @a")
+
 def op(player: str):
     """
     Makes then given player a server operator. This is a risky operation.
