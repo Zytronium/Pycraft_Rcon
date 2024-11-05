@@ -33,15 +33,18 @@ def death_swap(interval: int = 300, warningMsg: str = None, warningMsgType: str 
                     display("@a", fancy_text(warningMsg, "yellow", True), "title")
             # countdown
             if countdown is not None and  0 < swap_timer <= countdown:
-                color = "gold" if swap_timer >= 3 else "red"
+                color = "gold" if swap_timer > 3 else "red"
                 printmc(swap_timer, color, True)
 
-            # announce swap
-            if swap_timer == 0 and announceSwap:
-                printmc("Swapping...", "light_purple", True)
-
-            sleep(1)
+            # announce swap or print the final 0
+            if swap_timer == 0:
+                if announceSwap:
+                    printmc("Swapping...", "light_purple", True)
+                elif countdown is not None == 0:
+                    printmc("0", "red", True)
+            else:  # skip sleeping the last second
+                sleep(1)
             swap_timer -= 1
 
         # timer hits 0; swap all players
-        swap_all_players()
+        swap_all_players(True)

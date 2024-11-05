@@ -82,7 +82,7 @@ def teleport(entity: str, *args, **kwargs):
     else:
         raise ValueError("Invalid arguments for teleport function")
 
-def swap(entity1: str, entity2: str):
+def swap(entity1: str, entity2: str, announceSwap: bool = False):
     """
     Swaps the positions of two given entities using the /teleport command.
     :param entity1: first entity UUID or player name
@@ -116,12 +116,15 @@ def swap(entity1: str, entity2: str):
     entity_1_pos_x, entity_1_pos_y, entity_1_pos_z = get_entity_coordinates(entity1)
     # coords for entity 2 are not needed
 
+    if announceSwap:
+        printmc(f"Swapping {entity1} with {entity2}...", "dark_green", False, True)
+
     # teleport entity1 to entity2
     teleport(entity1, entity2)
     # teleport entity2 to entity1's original coordinates
     teleport(entity2, entity_1_pos_x, entity_1_pos_y, entity_1_pos_z)
 
-def swap_all_players():
+def swap_all_players(announce_swaps: bool = False):
     """
     Swaps each player's position with another player's position, ensuring that each player is swapped
     exactly once. If there's an odd number of players, the last player will be swapped with a random
@@ -141,14 +144,14 @@ def swap_all_players():
     # Pair up players and swap them
     for i in range(0, len(player_list), 2):
         player1, player2 = player_list[i], player_list[i + 1]
-        swap(player1, player2)
+        swap(player1, player2, announce_swaps)
         swap_dict[player1] = player2
         swap_dict[player2] = player1
 
     # If there was an odd player out, swap them with a random player from the paired list
     if last_player:
         random_player = random.choice(player_list)
-        swap(last_player, random_player)
+        swap(last_player, random_player, announce_swaps)
         swap_dict[last_player] = random_player
         swap_dict[random_player] = last_player
 
@@ -207,14 +210,6 @@ def execute(entity: str, command: str, *args, **kwargs):
     final_command = f"/execute as {entity} run {command_str}"
     return send_cmd_str(final_command)
 
-
-def get_player_coordinates_plan_b(player: str):
-    output = teleport(player, player)
-    a, b, c = get_entity_coordinates(player)
-    printmc(a, b, c)
-    return 0, 64, 0
-
-
 def spread_players(radius: int = 1000000):
     send_cmd_str("/effect give @a minecraft:resistance 25 255")
     player_list = get_player_list()
@@ -227,43 +222,6 @@ def spread_players(radius: int = 1000000):
         teleport(player, x, y, z)
         # printmc(f"Setting spawnpoint for {player} to {int(x)} {50} {int(z)}")
         # send_cmd_str(f"/spawnpoint {player} {int(x)} {50} {int(z)}")
-
-
-    # sleep(10)  # Increase delay if needed to ensure all players have teleported
-    #
-    # # Wait until all players have valid coordinates
-    # success = False
-    # fail_count = 0
-    # while not success:
-    #     success = True
-    #     for player in player_list:
-    #         try:
-    #             # Attempt to get coordinates and retry if None is returned
-    #             coords = get_entity_coordinates(player)
-    #             if coords is None:
-    #                 success = False
-    #                 fail_count += 1
-    #                 continue
-    #             x2, y2, z2 = coords
-    #         except TypeError as e:
-    #             success = False
-    #             fail_count += 1
-    #
-    #     if not success:
-    #         if fail_count >= 1 * len(player_list):
-    #             a, b, c = get_player_coordinates_plan_b(player)
-    #             send_cmd_str(f"/spawnpoint {player}, {a}, {b}, {c}")
-    #         else:
-    #             sleep(3)  # Wait before retrying
-    #
-    # printmc("setting spawnpoints")
-    #
-    # # Set spawnpoint for each player at their current location
-    # for player in player_list:
-    #     coords = get_player_coordinates_plan_b(player)
-    #     if coords:
-    #         x2, y2, z2 = coords
-    #         send_cmd_str(f"/spawnpoint {player} {int(x2)} {int(y2)} {int(z2)}")
 
 def op(player: str):
     """
@@ -484,17 +442,42 @@ def get_entity_coordinates(entity: str):
     """
     # Run the command to get the entity's position
     output = send_cmd_str(f"/data get entity {entity} Pos")
-    printmc(entity)
 
-    # Use regex to extract the three floating-point coordinates from the output
-    match = re.search(r'\[([\d\.\-]+)d, ([\d\.\-]+)d, ([\d\.\-]+)d\]', output)
+    # Use regex to extract the three floating-point or scientific notation coordinates from the output
+    match = re.search(r'\[([\-?\d\.eE]+)d, ([\-?\d\.eE]+)d, ([\-?\d\.eE]+)d\]', output)
 
     if match:
-        # Convert matched groups to floats and return as a tuple
+        # Convert matched groups to floats (handling scientific notation automatically) and return as a tuple
         x, y, z = map(float, match.groups())
         return x, y, z
     else:
         # If the entity is not found or an error occurs, return None
+        return None
+
+def get_entity_dimension(entity):
+    """
+    Gets the current dimension of the given entity.
+    :param entity: name or UUID of the entity.
+    :return: the dimension the entity is in.
+    """
+    response = send_cmd_str(f"/data get entity {entity} Dimension")
+
+    if response:
+        print(response)
+    else:
+        print("Error getting response.")
+
+    dimension_match = re.search(r'"([\w:]+)"', response)
+
+    if dimension_match:
+        dimension = dimension_match.group(1)
+        printmc(f"{entity} is currently in the {dimension} dimension.",
+                "gray")
+        return dimension
+    else:
+        printmc(
+            f"Could not find dimension information for entity {entity}.",
+            "red")
         return None
 
 def get_random_player():
