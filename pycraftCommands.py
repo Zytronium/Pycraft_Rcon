@@ -85,8 +85,8 @@ def teleport(entity: str, *args, **kwargs):
 def swap(entity1: str, entity2: str, announceSwapPartners: bool = False):
     """
     Swaps the positions of two given entities using the /teleport command.
-    :param entity1: first entity UUID or player name
-    :param entity2: second entity UUID or player name
+    :param entity1: first entity's UUID or player name
+    :param entity2: second entity's UUID or player name
     :param announceSwapPartners: whether to announce who is swapping with who
     """
     at_r_used = False
@@ -154,11 +154,13 @@ def swap_all_players(announce_swap_partners: bool = False):
 
     # If there was an odd player out, swap them with a random player from the paired list
     # Note that this can make the swap_dict entry for their partner inaccurate
-    if last_player:
+    if last_player and len(player_list) != 0:  # 0 means 1 player is online because we popped the last player from this list earlier if last_player isn't None
         random_player = random.choice(player_list)
         swap(last_player, random_player, announce_swap_partners)
         swap_dict[last_player] = random_player
         swap_dict[random_player] = last_player
+    elif len(player_list) == 0 and announce_swap_partners:
+        printmc("Unable to swap. Not enough players.", "green", False, True)
 
     return swap_dict
 
@@ -549,9 +551,11 @@ def troll_all_players():
          "[minecraft:item_name='{\"text\":\"Death Apple\"}',minecraft:item_model=enchanted_golden_apple,minecraft:enchantment_glint_override=true,minecraft:rarity=rare]")
     give("@r", "rotten_flesh", 64)
 
-def herobrine():
+def herobrine(lightning: bool = True):
     """makes Herobrine join the game"""
     printmc("Herobrine joined the game", "yellow")
+    if lightning:
+        summon("lightning_bolt", 0, 40, 0)
 
 def sudo(playername: str, message: str, override_name_check: bool = False):
     if not override_name_check and playername not in get_player_list():
