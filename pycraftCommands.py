@@ -119,7 +119,7 @@ def swap(entity1: str, entity2: str, announceSwapPartners: bool = False):
     # coords for entity 2 are not needed
 
     if announceSwapPartners:
-        printmc(f"Swapping {entity1} with {entity2}...", "green", False, True)
+        printmc(f"{entity1} has swapped with {entity2}.", "green", False, True)
 
     # teleport entity1 to entity2
     teleport(entity1, entity2)
@@ -147,12 +147,13 @@ def swap_all_players(announce_swap_partners: bool = False):
 
     # Pair up players and swap them
     for i in range(0, len(player_list), 2):
-        player1, player2 = player_list[i], player_list[i + 1]
-        swap(player1, player2, announce_swap_partners)
-        swap_dict[player1] = player2
-        swap_dict[player2] = player1
+        player1, player2 = player_list[i], player_list[i + 1]  # pair players
+        swap(player1, player2, announce_swap_partners)  # swap players
+        swap_dict[player1] = player2  # add player and swap partner to dict
+        swap_dict[player2] = player1  # again but reversed so you can look up either player by the key
 
     # If there was an odd player out, swap them with a random player from the paired list
+    # Note that this can make the swap_dict entry for their partner inaccurate
     if last_player:
         random_player = random.choice(player_list)
         swap(last_player, random_player, announce_swap_partners)
@@ -163,7 +164,7 @@ def swap_all_players(announce_swap_partners: bool = False):
 
 def display(player: str, text: str, type: str):
     """
-
+    displays a title on the player's screen
     :param player: player name to display the title to
     :param text: text to display
     :param type: type of title display (i.e. "title," "subtitle,", "actionbar," etc.)
@@ -226,14 +227,20 @@ def execute(entity: str, command: str, *args, **kwargs):
     final_command = f"/execute as {entity} run {command_str}"
     return send_cmd_str(final_command)
 
-def spread_players(radius: int = 1000000, give_regen: bool = False):
-    send_cmd_str("/effect give @a minecraft:resistance 25 255 true")
+def spread_players(radius: int = 20000000, give_regen: bool = False):
+    """
+    randomly teleports all players around the map
+    :param radius: the radius in blocks around 0, 0 that players can be teleported to. Default is 20 million.
+    :param give_regen: gives players instant health and saturation to reset them to max. Default is False.
+    """
+    # Apply effects to all players
+    send_cmd_str("/effect give @a minecraft:resistance 20 255 true")  # prevent fall damage
     if give_regen:
-        send_cmd_str("/effect give @a minecraft:instant_health 255 true")
-        send_cmd_str("/effect give @a minecraft:saturation 255 true")
+        send_cmd_str("/effect give @a minecraft:instant_health 5 255 true")  # restore to max hp
+        send_cmd_str("/effect give @a minecraft:saturation 5 255 true")  # restore to max saturation
     player_list = get_player_list()
 
-    # Initial teleport to random high altitude within the specified radius
+    # Teleport to random coordinates, at build limit, within the specified radius
     for player in player_list:
         x = randint(-radius, radius)
         y = 319
@@ -366,18 +373,11 @@ def summon(entity_type: str, *args, dimension: str = None, custom_prefix: str = 
         summon_command += f" {{{data_tags}}}"
 
     # Run the command multiple times if amount > 1
-    commands = []
+    output = ""
     for _ in range(amount):
-        commands.append(summon_command)
+        output = send_cmd_str(summon_command)
 
-    for command in commands:
-        printmc(f"Executing command: {command}")
-        # Send the command to the server
-        send_cmd_str(command)
-
-    printmc("cmd: " + summon_command)
-    print("cmd: " + summon_command)
-    return summon_command
+    return output
 
 def smite(entity: str):
     """
@@ -524,7 +524,7 @@ def get_entity_dimension(entity):
         dimension = dimension_match.group(1)
         return dimension
     else:
-        printmc(
+        print(
             f"Could not find dimension information for entity {entity}.",
             "red")
         return None
