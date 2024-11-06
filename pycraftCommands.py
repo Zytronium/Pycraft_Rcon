@@ -119,7 +119,7 @@ def swap(entity1: str, entity2: str, announceSwapPartners: bool = False):
     # coords for entity 2 are not needed
 
     if announceSwapPartners:
-        printmc(f"Swapping {entity1} with {entity2}...", "dark_green", False, True)
+        printmc(f"Swapping {entity1} with {entity2}...", "green", False, True)
 
     # teleport entity1 to entity2
     teleport(entity1, entity2)
@@ -189,6 +189,18 @@ def clear_display(player: str):
     """
     return send_cmd_str(f"/title {player} clear")
 
+def run(*args):
+    """
+    Run any function. Just type out the command as one string or pass arguments
+    in the order they would go based on the game's command syntax
+    :param args: command and/or it's arguments (with no leading "/")
+    :return: command output
+    """
+    cmd = "/"
+    for arg in args:
+        cmd += str(arg) + " "
+    return send_cmd_str(cmd)
+
 def execute(entity: str, command: str, *args, **kwargs):
     """
     Executes a command as the specified entity using the /execute command.
@@ -215,10 +227,10 @@ def execute(entity: str, command: str, *args, **kwargs):
     return send_cmd_str(final_command)
 
 def spread_players(radius: int = 1000000, give_regen: bool = False):
-    send_cmd_str("/effect give @a minecraft:resistance 25 255")
+    send_cmd_str("/effect give @a minecraft:resistance 25 255 true")
     if give_regen:
-        send_cmd_str("/effect give @a minecraft:instant_health 255")
-        send_cmd_str("/effect give @a minecraft:saturation 255")
+        send_cmd_str("/effect give @a minecraft:instant_health 255 true")
+        send_cmd_str("/effect give @a minecraft:saturation 255 true")
     player_list = get_player_list()
 
     # Initial teleport to random high altitude within the specified radius
@@ -306,18 +318,23 @@ def set_weather(type: str, duration: int = None, duration_unit: str = ""):
 
     return send_cmd_str(f"/weather {type} {duration if duration is not None else ''}{duration_unit.lower() if duration is not None else ''}")
 
-def summon(entity_type: str, *args, custom_prefix: str = "minecraft:", custom_data: dict = None, amount: int = 1, **kwargs):
+def summon(entity_type: str, *args, dimension: str = None, custom_prefix: str = "minecraft:", custom_data: dict = None, amount: int = 1, **kwargs):
     """
     Summons an entity at specified coordinates or at a given entity's position.
 
     :param entity_type: The type of entity to summon (e.g., 'creeper').
     :param args: Either a single entity (UUID, player name, or selector) or x, y, z coordinates.
+    :param dimension: the dimension to summon it in
     :param custom_prefix: Optional custom prefix for the entity (default is "minecraft:").
     :param custom_data: Optional custom entity data as a dictionary.
     :param amount: The number of entities to spawn (default is 1).
     :param kwargs: Optional keyword arguments for additional flexibility (e.g., tags or other data).
-    :return: The command string used to summon the entity.
+    :return: Command output from the last command used to summon the entity/entities
     """
+    # set default dimension if left as None and no entity given
+    if len(args) != 1 and dimension is None:
+        dimension = "minecraft:overworld"
+
     # Automatically handle the prefix
     entity_type = f"{custom_prefix}{entity_type}"
 
@@ -325,8 +342,9 @@ def summon(entity_type: str, *args, custom_prefix: str = "minecraft:", custom_da
     if len(args) == 1:
         target_entity = args[0]
         x, y, z = get_entity_coordinates(target_entity)
-        if x is None or y is None or z is None:
-            print("Entity not found or invalid coordinates.")
+        dimension = get_entity_dimension(target_entity)
+        if x is None or y is None or z is None or dimension is None:
+            print("Entity not found or invalid location.")
             return None
     elif len(args) == 3:
         x, y, z = args
@@ -335,7 +353,7 @@ def summon(entity_type: str, *args, custom_prefix: str = "minecraft:", custom_da
         return None
 
     # Build the summon command
-    summon_command = f"/summon {entity_type} {x} {y} {z}"
+    summon_command = f"/execute in {dimension} run summon {entity_type} {x} {y} {z}"
 
     # Handle custom entity data if provided
     if custom_data:
@@ -353,11 +371,13 @@ def summon(entity_type: str, *args, custom_prefix: str = "minecraft:", custom_da
         commands.append(summon_command)
 
     for command in commands:
-        print(f"Executing command: {command}")
-        # Here, you would typically send the command to the server
+        printmc(f"Executing command: {command}")
+        # Send the command to the server
         send_cmd_str(command)
 
-    return commands
+    printmc("cmd: " + summon_command)
+    print("cmd: " + summon_command)
+    return summon_command
 
 def smite(entity: str):
     """
@@ -366,8 +386,8 @@ def smite(entity: str):
     :param entity: the player or entity to smite
     :return: command output
     """
-    x, y, z = get_entity_coordinates(entity)
-    return send_cmd_str(f"/summon minecraft:lightning_bolt {x} {y} {z}")
+
+    return summon("lightning_bolt", entity)
 
 def smite_all():
     """
@@ -384,20 +404,21 @@ def explode(entity: str):
     :param entity: the player or entity to spontaneously combust
     :return: command output
     """
-    x, y, z = get_entity_coordinates(entity)
-    return send_cmd_str(f"/summon minecraft:tnt {x} {y} {z}")
+    return summon("tnt", entity)
 
 def nuke(entity: str):
     """
     blows up the given player for long enough to almost guarantee death and destruction
     :param entity: the player or entity to nuke
     """
-    for i in range(1, 321):
+    if entity == "@r":
+        entity = random.choice(get_player_list())
+    for i in range(1, 3):
         x, y, z = get_entity_coordinates(entity)
-        x += randint(-3, 3)
-        y += randint(-3, 3)
-        z += randint(-3, 3)
-        send_cmd_str(f"/summon minecraft:tnt {x} {y} {z}")
+        x += randint(-2, 2)
+        y += randint(-2, 2)
+        z += randint(-2, 2)
+        summon("creeper", x, y, z, dimension=get_entity_dimension(entity), custom_data={"Fuse":0,"ExplosionRadius":100})
 
 def list_players():
     """
@@ -501,8 +522,6 @@ def get_entity_dimension(entity):
 
     if dimension_match:
         dimension = dimension_match.group(1)
-        printmc(f"{entity} is currently in the {dimension} dimension.",
-                "gray")
         return dimension
     else:
         printmc(
@@ -530,6 +549,22 @@ def troll_all_players():
          "[minecraft:item_name='{\"text\":\"Death Apple\"}',minecraft:item_model=enchanted_golden_apple,minecraft:enchantment_glint_override=true,minecraft:rarity=rare]")
     give("@r", "rotten_flesh", 64)
 
+def herobrine():
+    """makes Herobrine join the game"""
+    printmc("Herobrine joined the game", "yellow")
+
+def sudo(playername: str, message: str, override_name_check: bool = False):
+    if not override_name_check and playername not in get_player_list():
+        while True:
+            user_input = input("That player is not online. Send message anyway? [Y/N]: ").lower().strip()
+            if user_input == "y":
+                break  # continue and print sudo message
+            elif user_input == "n":
+                print("Operation canceled.")
+                return  # abort
+
+    printmc(f"<{playername}> {message}")
+
 def self_destruct(countdown: int = 10):
     # Ensure countdown is at least 1 second
     if countdown < 1:
@@ -541,6 +576,7 @@ def self_destruct(countdown: int = 10):
     # Countdown sequence
     while countdown > 0:
         color = "yellow" if countdown >= 5 else "red"
+        send_cmd_str("/execute as @a at @s run playsound minecraft:block.note_block.hat master @s ~ ~ ~")
         printmc(countdown, color)
         countdown -= 1
         sleep(1)
@@ -549,6 +585,19 @@ def self_destruct(countdown: int = 10):
     printmc("Shutting down server...","gray")
     sleep(0.125)
     send_cmd_str("/stop")
+
+def setup_deathswap():
+    # clear players' inventories
+    clear_all(True)
+
+    # ensure all players are in survival mode
+    send_cmd_str("/gamemode survival @a")
+
+    # randomly tp players
+    spread_players(28000000, True)
+
+    # give players food
+    give("@a", "golden_carrot", 64)
 
 
 if __name__ == '__main__':

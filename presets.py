@@ -8,7 +8,7 @@ def hello_world():
     sleep(3)
     printmc("<World> Hello!")
 
-def death_swap(interval: int = 300, warningMsg: str = None, warningMsgType: str = "chat", warningMsgAdvance: int = 30, countdown: int = None, announceSwap: bool = True, announceSwapPartners: bool = True):
+def death_swap(interval: int = 300, warningMsg: str = None, warningMsgType: str = "chat", warningMsgAdvance: int = 30, countdown: int = None, announceSwap: bool = True, announceSwapPartners: bool = True, randomCreepers: bool = False):
     """
     Death Swap. Every x amount of seconds, everyone's position gets swapped with a random player's
     :param interval: number of seconds between each swap
@@ -18,6 +18,7 @@ def death_swap(interval: int = 300, warningMsg: str = None, warningMsgType: str 
     :param countdown: number of seconds to count down before the swap. Set to None to disable
     :param announceSwap: whether to announce it is swapping when it's time to swap and the countdown hits 0
     :param announceSwapPartners: whether to announce who is swapping with who when the timer hits 0
+    :param randomCreepers: every second has a chance to summon a creeper on everyone
     :return:
     """
     # death swap loop
@@ -35,6 +36,7 @@ def death_swap(interval: int = 300, warningMsg: str = None, warningMsgType: str 
             # countdown
             if countdown is not None and  0 < swap_timer <= countdown:
                 color = "gold" if swap_timer > 3 else "red"
+                send_cmd_str("/execute as @a at @s run playsound minecraft:block.note_block.hat master @s ~ ~ ~")
                 printmc(swap_timer, color, True)
 
             # announce swap or print the final 0
@@ -46,6 +48,11 @@ def death_swap(interval: int = 300, warningMsg: str = None, warningMsgType: str 
             else:  # skip sleeping the last second
                 sleep(1)
             swap_timer -= 1
+            if randomCreepers and random.randint(0, 245) == 45:
+                for player in get_player_list():
+                    summon("creeper", player)
 
         # timer hits 0; swap all players
         swap_all_players(announceSwapPartners)
+        if announceSwap or announceSwapPartners:
+            send_cmd_str("/execute as @a at @s run playsound minecraft:block.note_block.pling master @s ~ ~ ~")
