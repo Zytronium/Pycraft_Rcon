@@ -415,10 +415,10 @@ def nuke(entity: str, missile_mode: bool = False):
     """
     if entity == "@r":
         entity = random.choice(get_player_list())
-    for i in range(0, 3 if not missile_mode else 1):
+    for i in range(0, 4):
         x, y, z = get_entity_coordinates(entity)
         x += randint(-2, 2)
-        y += randint(-2, 2) if not missile_mode else y + 225
+        y += randint(-2, 2) if not missile_mode else max(445, y + 525)
         z += randint(-2, 2)
         nuke_data = {
         "Motion": [0.0, -10.0, 0.0],  # Extreme downwards velocity
@@ -611,12 +611,14 @@ def setup_deathswap():
     # give players food
     give("@a", "golden_carrot", 64)
 
-def nuke_countdown(player: str, delay: int = 20, countdown: int = 10):
-    if delay < 3:
-        raise ValueError("Countdown must be at least 3 seconds to allow for the nuke to drop in sync.")
+def nuke_countdown(player: str | list, delay: int = 20, countdown: int = 10):
+    if delay < 5:
+        raise ValueError("Countdown must be at least 5 seconds to allow for the nuke to drop in sync.")
 
     mode = "targeted"
-    if player == "@r":
+    if isinstance(player, list):
+        mode = "several"
+    elif player == "@r":
         mode = "random"
         player = get_random_player()
     elif player == "@a":
@@ -629,8 +631,10 @@ def nuke_countdown(player: str, delay: int = 20, countdown: int = 10):
         warning_msg += "A NUCLEAR STRIKE IS INCOMING AND HEADED DIRECTLY TOWARDS A RANDOM PLAYER. "
     elif mode == "all":
         warning_msg += "A SERIES OF NUCLEAR STRIKES HAVE BEEN ORDERED ON THIS WORLD. SEEK SHELTER IMMEDIATELY. "
+    elif mode == "targeted":
+        warning_msg += "A SERIES OF NUCLEAR STRIKES HAVE BEEN ORDERED ON SEVERAL PEOPLE. SEEK SHELTER IMMEDIATELY. "
 
-    warning_msg += f"THE MISSILE WILL IMPACT IN APPROXIMATELY {delay} SECONDS. THIS IS NOT A DRILL. "
+    warning_msg += f"THE MISSILES WILL IMPACT IN APPROXIMATELY {delay} SECONDS. THIS IS NOT A DRILL. "
     if randint(0, 30) == 30:  # 1 in 31 chance of adding a dad joke to the warning
         warning_msg += "IT IS A HAMMER. "
 
@@ -647,16 +651,16 @@ def nuke_countdown(player: str, delay: int = 20, countdown: int = 10):
                     "/execute as @a at @s run playsound minecraft:block.note_block.cow_bell master @s ~ ~ ~ 0.25")
             printmc(delay, color, True)
 
-        if delay == 3:
+        if delay == 5:
             if mode == "targeted" or mode == "random":
                 nuke(player, True)
+            elif mode == "several":
+                for p in player:
+                    nuke(p, True)
             else:
                 nuke_all()
 
         delay -= 1
-
-    sleep(4)
-    printmc(f"The nuclear assault is over. The death count is estimated at around {len(get_player_list())} deaths.")
 
 def nuke_all():
     for player in get_player_list():

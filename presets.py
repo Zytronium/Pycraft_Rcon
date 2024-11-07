@@ -63,8 +63,6 @@ def death_swap(interval: int = 300, warningMsg: str = None, warningMsgType: str 
 def nuclear_mayhem(
         target_mode: str = "all",
         # Options: "random", "all", or "several_random"
-        accuracy: int = 10,
-        # Radius around the player for nuke accuracy, in blocks
         warning_time: int = (20, 40),
         # Single integer or tuple range for warning time
         strike_interval: int = 120,
@@ -76,12 +74,10 @@ def nuclear_mayhem(
     Initiates a mini-game where players must shelter from periodic nuclear strikes.
 
     :param target_mode: "random" (targets a random player), "all" (targets all players), or "several_random" (targets multiple random players)
-    :param accuracy: Radius around each player within which a nuke can strike
     :param warning_time: Either an integer or a tuple (min, max) for the countdown warning time
     :param strike_interval: Approximate time (in seconds) between nuclear strikes
     :param interval_variation: Range within which the interval between strikes can vary
     """
-
     def schedule_next_strike():
         # Calculate the time for the next strike within given interval and variation
         return strike_interval + random.randint(-interval_variation, interval_variation)
@@ -89,9 +85,9 @@ def nuclear_mayhem(
     def choose_targets():
         players = get_player_list()
         if target_mode == "random":
-            return [random.choice(players)]
+            return "@r"
         elif target_mode == "all":
-            return players
+            return "@a"
         elif target_mode == "several_random":
             # Choose multiple unique players to target
             num_targets = max(1, random.randint(1, len(players) // 2))
@@ -99,32 +95,26 @@ def nuclear_mayhem(
 
     def initiate_nuke(target, delay):
         # Offset target coordinates for accuracy
-        x, y, z = get_entity_coordinates(target)
-        x += random.randint(-accuracy, accuracy)
-        z += random.randint(-accuracy, accuracy)
 
         # Start countdown and execute nuke
         nuke_countdown(target, delay=delay)
 
     # Main loop for scheduling nuclear strikes
     while True:
+        # Determine warning time for each target (fixed or within range)
+        delay = warning_time
+        if isinstance(warning_time, tuple):
+            delay = random.randint(warning_time[0], warning_time[1])
+
         time_to_next_strike = schedule_next_strike()
         print(f"Next nuclear strike in approximately {time_to_next_strike} seconds.")
 
         # Wait until the next strike time
-        sleep(time_to_next_strike)
+        sleep(max(5, time_to_next_strike - delay))
 
         # Determine targets for the current strike
         targets = choose_targets()
         print(f"Nuclear strike targeting: {targets}")
 
         # Execute each nuke countdown sequentially
-        for target in targets:
-            # Determine warning time for each target (fixed or within range)
-            if isinstance(warning_time, tuple):
-                delay = random.randint(warning_time[0], warning_time[1])
-            else:
-                delay = warning_time
-
-            # Execute the countdown and nuke for the target
-            initiate_nuke(target, delay)
+        initiate_nuke(targets, delay)
