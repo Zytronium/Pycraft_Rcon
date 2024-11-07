@@ -2,6 +2,8 @@
 """Module for python functions that perform Minecraft commands and send them to a running minecraft server via rcon"""
 import random
 import re
+import threading
+from itertools import count
 from random import randint
 from time import sleep
 from numbers import Number
@@ -408,19 +410,24 @@ def explode(entity: str):
     """
     return summon("tnt", entity)
 
-def nuke(entity: str):
+def nuke(entity: str, missile_mode: bool = False):
     """
     blows up the given player for long enough to almost guarantee death and destruction
     :param entity: the player or entity to nuke
     """
     if entity == "@r":
         entity = random.choice(get_player_list())
-    for i in range(1, 3):
+    for i in range(0, 3 if not missile_mode else 1):
         x, y, z = get_entity_coordinates(entity)
         x += randint(-2, 2)
-        y += randint(-2, 2)
+        y += randint(-2, 2) if not missile_mode else max(y + 200, 350)
         z += randint(-2, 2)
-        summon("creeper", x, y, z, dimension=get_entity_dimension(entity), custom_data={"Fuse":0,"ExplosionRadius":100})
+        nuke_data = {
+        "Motion": [0.0, -10.0, 0.0],  # Extreme downwards velocity
+        "ExplosionPower": 127,            # Large explosion radius
+        "CustomName": "\"nuke\""          # Name the fireball "nuke"
+    }
+        summon("fireball", x, y, z, dimension=get_entity_dimension(entity), custom_data=nuke_data)
 
 def list_players():
     """
@@ -579,8 +586,11 @@ def self_destruct(countdown: int = 10):
 
     # Countdown sequence
     while countdown > 0:
-        color = "yellow" if countdown >= 5 else "red"
+        color = "yellow" if countdown > 3 else "red"
         send_cmd_str("/execute as @a at @s run playsound minecraft:block.note_block.hat master @s ~ ~ ~")
+        if countdown <= 3:
+            send_cmd_str(
+                "/execute as @a at @s run playsound minecraft:block.note_block.cow_bell master @s ~ ~ ~")
         printmc(countdown, color)
         countdown -= 1
         sleep(1)
@@ -603,6 +613,60 @@ def setup_deathswap():
     # give players food
     give("@a", "golden_carrot", 64)
 
+def nuke_countdown(player: str, delay: int = 20, countdown: int = 10):
+    if delay < 3:
+        raise ValueError("Countdown must be at least 3 seconds to allow for the nuke to drop in sync.")
+
+    mode = "targeted"
+    if player == "@r":
+        mode = "random"
+        player = get_random_player()
+    elif player == "@a":
+        mode = "all"
+
+    warning_msg = "WARNING: "
+    if mode == "targeted":
+        warning_msg += "A TARGETED NUCLEAR STRIKE HAS BEEN ORDERED ON AN UNNAMED INDIVIDUAL. "
+    elif mode == "random":
+        warning_msg += "A NUCLEAR STRIKE IS INCOMING AND HEADED DIRECTLY TOWARDS A RANDOM PLAYER. "
+    elif mode == "all":
+        warning_msg += "A SERIES OF NUCLEAR STRIKES HAVE BEEN ORDERED ON THIS WORLD. SEEK SHELTER IMMEDIATELY. "
+
+    warning_msg += f"THE MISSILE WILL IMPACT IN APPROXIMATELY {delay} SECONDS. THIS IS NOT A DRILL. "
+    if randint(0, 30) == 30:  # 1 in 31 chance of adding a dad joke to the warning
+        warning_msg += "IT IS A HAMMER. "
+
+    printmc(warning_msg, "gold", True)
+
+    my_thread = threading.Thread(target=nuke_all)
+    while delay >= 0:
+        sleep(1)
+        if delay <= countdown:
+            color = "gold" if delay > 3 else "red"
+            send_cmd_str(
+                "/execute as @a at @s run playsound minecraft:block.note_block.hat master @s ~ ~ ~")
+            if delay <= 3:
+                send_cmd_str(
+                    "/execute as @a at @s run playsound minecraft:block.note_block.cow_bell master @s ~ ~ ~ 0.25")
+            printmc(delay, color, True)
+
+        if delay == 3:
+            if mode == "targeted" or mode == "random":
+                nuke(player, True)
+            else:
+                my_thread.start()
+
+        delay -= 1
+
+    if mode == "all":
+        my_thread.join()
+    sleep(3)
+    printmc(f"The nuclear assault is over. The death count is estimated at around {len(get_player_list())} deaths.")
+
+def nuke_all():
+    for player in get_player_list():
+        sleep(randint(12.5, 900) * 0.001)
+        nuke(player, True)
 
 if __name__ == '__main__':
     printmc("Test 123", "gold", True)

@@ -37,6 +37,9 @@ def death_swap(interval: int = 300, warningMsg: str = None, warningMsgType: str 
             if countdown is not None and  0 < swap_timer <= countdown:
                 color = "gold" if swap_timer > 3 else "red"
                 send_cmd_str("/execute as @a at @s run playsound minecraft:block.note_block.hat master @s ~ ~ ~")
+                if swap_timer <= 3:
+                    send_cmd_str(
+                        "/execute as @a at @s run playsound minecraft:block.note_block.cow_bell master @s ~ ~ ~ 0.25")
                 printmc(swap_timer, color, True)
 
             # announce swap or print the final 0
