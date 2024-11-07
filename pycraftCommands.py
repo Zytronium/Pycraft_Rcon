@@ -1,7 +1,7 @@
 #!/bin/python3
 """Module for python functions that perform Minecraft commands and send them to a running minecraft server via rcon"""
-import random
 import re
+import random
 from random import randint
 from time import sleep
 from numbers import Number
@@ -635,7 +635,7 @@ def nuke_countdown(player: str | list, delay: int = 20, countdown: int = 10):
         warning_msg += "A SERIES OF NUCLEAR STRIKES HAVE BEEN ORDERED ON SEVERAL PEOPLE. SEEK SHELTER IMMEDIATELY. "
 
     warning_msg += f"THE MISSILES WILL IMPACT IN APPROXIMATELY {delay} SECONDS. THIS IS NOT A DRILL. "
-    if randint(0, 30) == 30:  # 1 in 31 chance of adding a dad joke to the warning
+    if randint(0, 29) == 29:  # 1 in 30 chance of adding a dad joke to the warning
         warning_msg += "IT IS A HAMMER. "
 
     printmc(warning_msg, "gold", True)

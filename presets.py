@@ -1,7 +1,7 @@
 #!/bin/python3
 """This module contains presets for things created using a series of commands, like minigames."""
 from pycraftCommands import *
-import threading
+
 
 def hello_world():
     printmc("<Pycraft> Hello world!", "gold")
@@ -116,5 +116,5 @@ def nuclear_mayhem(
         targets = choose_targets()
         print(f"Nuclear strike targeting: {targets}")
 
-        # Execute each nuke countdown sequentially
+        # Execute nuke countdown on all targets.
         initiate_nuke(targets, delay)
