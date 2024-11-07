@@ -2,8 +2,6 @@
 """Module for python functions that perform Minecraft commands and send them to a running minecraft server via rcon"""
 import random
 import re
-import threading
-from itertools import count
 from random import randint
 from time import sleep
 from numbers import Number
@@ -420,7 +418,7 @@ def nuke(entity: str, missile_mode: bool = False):
     for i in range(0, 3 if not missile_mode else 1):
         x, y, z = get_entity_coordinates(entity)
         x += randint(-2, 2)
-        y += randint(-2, 2) if not missile_mode else max(y + 200, 350)
+        y += randint(-2, 2) if not missile_mode else y + 225
         z += randint(-2, 2)
         nuke_data = {
         "Motion": [0.0, -10.0, 0.0],  # Extreme downwards velocity
@@ -638,7 +636,6 @@ def nuke_countdown(player: str, delay: int = 20, countdown: int = 10):
 
     printmc(warning_msg, "gold", True)
 
-    my_thread = threading.Thread(target=nuke_all)
     while delay >= 0:
         sleep(1)
         if delay <= countdown:
@@ -654,18 +651,16 @@ def nuke_countdown(player: str, delay: int = 20, countdown: int = 10):
             if mode == "targeted" or mode == "random":
                 nuke(player, True)
             else:
-                my_thread.start()
+                nuke_all()
 
         delay -= 1
 
-    if mode == "all":
-        my_thread.join()
-    sleep(3)
+    sleep(4)
     printmc(f"The nuclear assault is over. The death count is estimated at around {len(get_player_list())} deaths.")
 
 def nuke_all():
     for player in get_player_list():
-        sleep(randint(12.5, 900) * 0.001)
+        sleep(randint(125, 2500) * 0.00001)
         nuke(player, True)
 
 if __name__ == '__main__':
