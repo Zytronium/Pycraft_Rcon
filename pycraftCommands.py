@@ -8,6 +8,26 @@ from numbers import Number
 from sendToServer import send_cmd_str
 
 
+def fancy_time(seconds: int, round_minutes_to: int | float = 1, round_seconds_to: int = 1, min_round_sec_to_min: int = 51) -> str:
+    """
+    Convert seconds to either seconds or minutes.
+    :param seconds: number of seconds
+    :param round_minutes_to: round minutes to the nearest specified minute increment
+    :param round_seconds_to: round seconds to the nearest specified second increment
+    :param min_round_sec_to_min: minimum number of seconds to convert to minutes instead of seconds
+    :return: formatted time string in either minutes or seconds
+    """
+    if seconds >= min_round_sec_to_min:  # Convert to minutes when seconds exceed 1 minute
+        # Convert seconds to minutes and round to the nearest specified minute increment
+        minutes = round((seconds / 60) / round_minutes_to) * round_minutes_to
+        minutes_str = f"{int(minutes) if minutes.is_integer() else minutes} minute{'s' if minutes != 1 else ''}"
+        return minutes_str
+    else:
+        # Round seconds to the nearest specified second increment
+        rounded_seconds = round(seconds / round_seconds_to) * round_seconds_to
+        return f"{rounded_seconds} second{'s' if rounded_seconds != 1 else ''}"
+
+
 def fancy_text(text: str = "", color: str = "white", bold: bool = False, itallic: bool = False, underlined: bool = False, strikethrough: bool = False, obfuscated: bool = False):
     """
     returns the formatted Json text version of the given text.
@@ -634,11 +654,13 @@ def nuke_countdown(player: str | list, delay: int = 20, countdown: int = 10):
     elif mode == "targeted":
         warning_msg += "A SERIES OF NUCLEAR STRIKES HAVE BEEN ORDERED ON SEVERAL PEOPLE. SEEK SHELTER IMMEDIATELY. "
 
-    warning_msg += f"THE MISSILES WILL IMPACT IN APPROXIMATELY {delay} SECONDS. THIS IS NOT A DRILL. "
+    warning_msg += f"THE MISSILES WILL IMPACT IN APPROXIMATELY {fancy_time(delay, 1, 5, 95)}. THIS IS NOT A DRILL. "
     if randint(0, 29) == 29:  # 1 in 30 chance of adding a dad joke to the warning
         warning_msg += "IT IS A HAMMER. "
 
     printmc(warning_msg, "gold", True)
+    send_cmd_str(
+        "/execute as @a at @s run playsound minecraft:ui.button.click master @s ~ ~ ~")
 
     while delay >= 0:
         sleep(1)

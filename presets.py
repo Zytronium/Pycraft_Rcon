@@ -78,6 +78,13 @@ def nuclear_mayhem(
     :param strike_interval: Approximate time (in seconds) between nuclear strikes
     :param interval_variation: Range within which the interval between strikes can vary
     """
+    # Display the message with the formatted interval
+    print(printmc(f"Warning: Nuclear Mayhem game mode activated. Random nuclear " +
+            f"strikes will now occur {'roughly ' if interval_variation > 5 else ''}" +
+            f"every {fancy_time(strike_interval, 0.5, 5)}.", "dark_aqua", True))
+    send_cmd_str(
+        "/execute as @a at @s run playsound minecraft:ui.button.click master @s ~ ~ ~")
+
     def schedule_next_strike():
         # Calculate the time for the next strike within given interval and variation
         return strike_interval + random.randint(-interval_variation, interval_variation)
@@ -107,7 +114,7 @@ def nuclear_mayhem(
             delay = random.randint(warning_time[0], warning_time[1])
 
         time_to_next_strike = schedule_next_strike()
-        print(f"Next nuclear strike in approximately {time_to_next_strike} seconds.")
+        # print(f"Next nuclear strike in approximately {time_to_next_strike} seconds.")
 
         # Wait until the next strike time
         sleep(max(5, time_to_next_strike - delay))
