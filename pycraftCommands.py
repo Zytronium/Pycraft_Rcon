@@ -27,7 +27,6 @@ def fancy_time(seconds: int, round_minutes_to: int | float = 1, round_seconds_to
         rounded_seconds = round(seconds / round_seconds_to) * round_seconds_to
         return f"{rounded_seconds} second{'s' if rounded_seconds != 1 else ''}"
 
-
 def fancy_text(text: str = "", color: str = "white", bold: bool = False, itallic: bool = False, underlined: bool = False, strikethrough: bool = False, obfuscated: bool = False):
     """
     returns the formatted Json text version of the given text.
@@ -438,7 +437,7 @@ def nuke(entity: str, missile_mode: bool = False):
     for i in range(0, 4):
         x, y, z = get_entity_coordinates(entity)
         x += randint(-2, 2)
-        y += randint(-2, 2) if not missile_mode else max(445, y + 525)
+        y += randint(-2, 2) if not missile_mode else max(345, y + 425)  # if missile mode, summon it at a height calculated to impact the ground in roughly 5 seconds
         z += randint(-2, 2)
         nuke_data = {
         "Motion": [0.0, -10.0, 0.0],  # Extreme downwards velocity
@@ -651,7 +650,7 @@ def nuke_countdown(player: str | list, delay: int = 20, countdown: int = 10):
         warning_msg += "A NUCLEAR STRIKE IS INCOMING AND HEADED DIRECTLY TOWARDS A RANDOM PLAYER. "
     elif mode == "all":
         warning_msg += "A SERIES OF NUCLEAR STRIKES HAVE BEEN ORDERED ON THIS WORLD. SEEK SHELTER IMMEDIATELY. "
-    elif mode == "targeted":
+    elif mode == "several":
         warning_msg += "A SERIES OF NUCLEAR STRIKES HAVE BEEN ORDERED ON SEVERAL PEOPLE. SEEK SHELTER IMMEDIATELY. "
 
     warning_msg += f"THE MISSILES WILL IMPACT IN APPROXIMATELY {fancy_time(delay, 1, 5, 95)}. THIS IS NOT A DRILL. "
