@@ -20,5 +20,6 @@ from presets import death_swap
 from pycraftCommands import setup_deathswap
 
 
-setup_deathswap()
-death_swap()
+if __name__ == '__main__':
+    setup_deathswap()
+    death_swap()

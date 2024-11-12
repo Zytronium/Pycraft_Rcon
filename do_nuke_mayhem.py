@@ -11,13 +11,14 @@ from pycraftCommands import printmc
 from time import sleep
 from presets import nuclear_mayhem
 
-
-while True:
-    try:
-        nuclear_mayhem(warning_time=(15, 45), strike_interval=150,
-                       interval_variation=15, target_mode="random")
-    except MCRconException:
-        printmc("An error has occurred during Nuclear Mayhem. Attempting to recover...", "red", itallic=True)
-        sleep(3)
-        nuclear_mayhem(warning_time=(15, 45), strike_interval=150,
-                       interval_variation=15, target_mode="random")
+if __name__ == '__main__':
+    while True:
+        try:
+            nuclear_mayhem(warning_time=(15, 45), strike_interval=150,
+                           interval_variation=15, target_mode="random")
+        except MCRconException:
+            sleep(10)  # the exception is likely a timeout error caused by server lag. Sleep for 10 seconds to try to wait out the lag.
+            printmc("An error has occurred during Nuclear Mayhem. Attempting to recover...", "red", itallic=True)
+            sleep(3)  # an additional 3 seconds here doesn't hurt
+            nuclear_mayhem(warning_time=(15, 45), strike_interval=150,
+                           interval_variation=15, target_mode="random")
