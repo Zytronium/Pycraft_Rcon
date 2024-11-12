@@ -5,7 +5,7 @@ import random
 from random import randint
 from time import sleep
 from numbers import Number
-from sendToServer import send_cmd_str
+from sendToServer import send_cmd_str, send_commands_to_minecraft
 
 
 def fancy_time(seconds: int, round_minutes_to: int | float = 1, round_seconds_to: int = 1, min_round_sec_to_min: int = 51) -> str:
@@ -140,11 +140,14 @@ def swap(entity1: str, entity2: str, announceSwapPartners: bool = False):
     if announceSwapPartners:
         printmc(f"{entity1} has swapped with {entity2}.", "green", False, True)
 
+    commands = []
     # teleport entity1 to entity2
-    teleport(entity1, entity2)
+    commands.append(f"teleport {entity1} {entity2}")
     # Teleport entity2 to entity1's position and dimension
-    send_cmd_str(
-        f"/execute in {entity_1_dimension} run tp {entity2} {entity_1_pos_x} {entity_1_pos_y} {entity_1_pos_z}")
+    commands.append(f"execute in {entity_1_dimension} run tp {entity2} {entity_1_pos_x} {entity_1_pos_y} {entity_1_pos_z}")
+
+    # execute commands and swap both players
+    send_commands_to_minecraft(command_list=commands)
 
 def swap_all_players(announce_swap_partners: bool = False):
     """
