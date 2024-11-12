@@ -432,13 +432,22 @@ def nuke(entity: str, missile_mode: bool = False):
     blows up the given player for long enough to almost guarantee death and destruction
     :param entity: the player or entity to nuke
     """
+    # Set to true if the server has a /nuke command compatible with this function
+    use_server_nuke_cmd = True
+
+
     if entity == "@r":
         entity = random.choice(get_player_list())
+
+
+    if use_server_nuke_cmd:
+        return send_cmd_str(f"nuke {entity} {missile_mode}", cmd_prefix="")
+
     for i in range(0, 4):
         x, y, z = get_entity_coordinates(entity)
-        x += randint(-2, 2)
-        y += randint(-2, 2) if not missile_mode else max(345, y + 425)  # if missile mode, summon it at a height calculated to impact the ground in roughly 5 seconds
-        z += randint(-2, 2)
+        x += randint(-3, 3)
+        y += randint(-3, 3) if not missile_mode else max(345, y + 425)  # if missile mode, summon it at a height calculated to impact the ground in roughly 5 seconds
+        z += randint(-3, 3)
         nuke_data = {
         "Motion": [0.0, -10.0, 0.0],  # Extreme downwards velocity
         "ExplosionPower": 127,            # Large explosion radius
@@ -617,7 +626,7 @@ def self_destruct(countdown: int = 10):
     sleep(0.125)
     send_cmd_str("/stop")
 
-def setup_deathswap():
+def setup_deathswap(radius: int = 25000000):
     # clear players' inventories
     clear_all(True)
 
@@ -625,7 +634,7 @@ def setup_deathswap():
     send_cmd_str("/gamemode survival @a")
 
     # randomly tp players
-    spread_players(28000000, True)
+    spread_players(radius, True)
 
     # give players food
     give("@a", "golden_carrot", 64)

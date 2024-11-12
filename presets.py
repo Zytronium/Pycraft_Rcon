@@ -8,11 +8,11 @@ def hello_world():
     sleep(3)
     printmc("<World> Hello!")
 
-def death_swap(interval: int = 300, warningMsg: str = None, warningMsgType: str = "chat", warningMsgAdvance: int = 30, countdown: int = None, announceSwap: bool = True, announceSwapPartners: bool = True, randomCreepers: bool = False):
+def death_swap(interval: int = 300, warningMsg: str = "Warning: the next swap will be in {sec} seconds.", warningMsgType: str = "chat", warningMsgAdvance: int = 30, countdown: int = 10, announceSwap: bool = True, announceSwapPartners: bool = True, randomCreepers: bool = False):
     """
     Death Swap. Every x amount of seconds, everyone's position gets swapped with a random player's
     :param interval: number of seconds between each swap
-    :param warningMsg: message to display before each swap
+    :param warningMsg: message to display before each swap. Any occurrence of "{sec}" will be replaced with number of seconds remaining
     :param warningMsgType: method of displaying the warning message. "chat" for it to print to public chat. "display" for it to display as a title on each player's screen.
     :param warningMsgAdvance: amount of time in advance the warning message displays before the swap happens
     :param countdown: number of seconds to count down before the swap. Set to None to disable
@@ -22,6 +22,7 @@ def death_swap(interval: int = 300, warningMsg: str = None, warningMsgType: str 
     :return:
     """
     # death swap loop
+    warningMsg = warningMsg.replace("{sec}", str(warningMsgAdvance))
     while True:
         swap_timer = interval
         # timer loop

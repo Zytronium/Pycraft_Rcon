@@ -44,10 +44,25 @@ def send_commands_to_minecraft():
                     mcr.command(command)  # Send the command to the server
                     print(f"Executed: {command}\nServer Response: ", end="")
 
-def send_cmd_str(command: str):
+def send_cmd_str(command: str, cmd_prefix: str = None):
+    # set to True if the server requires the "minecraft:" prefix for vanilla commands.
+    add_vanilla_prefix = False
+
+    # remove leading '/'
+    if command[0] == '/':
+        command = command[1:]
+
+    # set vanilla cmd prefix
+    if cmd_prefix is None and add_vanilla_prefix:
+        cmd_prefix = "minecraft:"
+    elif cmd_prefix is None:
+        cmd_prefix = ""
+
+    # add the cmd prefix
+    command = f"{cmd_prefix}{command}"
+
     # Connect to the Minecraft server via RCON
     with MCRcon(RCON_HOST, RCON_PASSWORD, port=RCON_PORT) as mcr:
-        # Open the file with the Minecraft commands
         cmd = command.strip()  # Remove any trailing whitespace or newline
         if cmd:
             response = mcr.command(cmd)  # Send the command to the server
