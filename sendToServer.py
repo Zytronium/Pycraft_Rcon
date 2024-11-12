@@ -81,20 +81,49 @@ def send_commands_to_minecraft(command_file_path: str = None,
     (the parent folder of the file that defines this function) (I think).
     :param command_list: list of commands to send. Must be a list of strings.
     """
+    mode = None
+
     if command_file_path is None:
         if command_list is None:
             raise ValueError("No command file or list specified.")
+
+        # Using list of command strings
+
+        # Ensure command_list is a list of strings
         for cmd in command_list:
             if type(cmd) is not str:
                 raise TypeError("command_list must be a list of strings")
-        # ...
+
+        mode = "list"
+    else:
+        # Using file containing commands
+        mode = "file"
 
     # Connect to the Minecraft server via RCON
     with MCRcon(RCON_HOST, RCON_PASSWORD, port=RCON_PORT) as mcr:
-        # Open the file with the Minecraft commands
-        with open(COMMAND_FILE_PATH, 'r') as command_file:
-            for command in command_file:
-                # Remove any trailing whitespace or newline
+        if mode == "file":
+            # Open the file with the Minecraft commands
+            with open(COMMAND_FILE_PATH, 'r') as command_file:
+                for line in command_file:
+                    # remove any trailing whitespace or newline
+                    command = line.strip()
+                    if command:
+                        # remove leading '/'
+                        if command[0] == '/':
+                            command = command[1:]
+
+                        # set vanilla cmd prefix if needed
+                        cmd_prefix = "" if not USE_VANILLA_PREFIX else "minecraft:"
+
+                        # add the cmd prefix
+                        command = f"{cmd_prefix}{command}"
+
+                        # send the command to the server
+                        mcr.command(command)
+                        print(f"Executed: {command}\nServer Response: ", end="")
+        elif mode == "list":
+            for command in command_list:
+                # remove any trailing whitespace or newline
                 command = command.strip()
                 if command:
                     # remove leading '/'
@@ -107,7 +136,7 @@ def send_commands_to_minecraft(command_file_path: str = None,
                     # add the cmd prefix
                     command = f"{cmd_prefix}{command}"
 
-                    # Send the command to the server
+                    # send the command to the server
                     mcr.command(command)
                     print(f"Executed: {command}\nServer Response: ", end="")
 
