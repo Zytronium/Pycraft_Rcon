@@ -1,7 +1,6 @@
 /interpreter.py
 /.idea
 /main.py
-/settings/server_connections/default
-/settings/server_connections/lumicraft
-/settings/server_connections/locally_hosted
 /settings/settings
+/settings/server_connections/*
+!/settings/server_connections/README.md

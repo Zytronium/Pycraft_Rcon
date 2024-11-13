@@ -5,7 +5,7 @@ import random
 from random import randint
 from time import sleep
 from numbers import Number
-from sendToServer import send_cmd_str, send_commands_to_minecraft
+from sendToServer import send_cmd_str, send_commands_to_minecraft, NUKE_CMD
 
 
 def fancy_time(seconds: int, round_minutes_to: int | float = 1, round_seconds_to: int = 1, min_round_sec_to_min: int = 51) -> str:
@@ -436,7 +436,7 @@ def nuke(entity: str, missile_mode: bool = False):
     :param entity: the player or entity to nuke
     """
     # Set to true if the server has a /nuke command compatible with this function
-    use_server_nuke_cmd = True
+    use_server_nuke_cmd = True if NUKE_CMD != False else False
 
 
     if entity == "@r":
@@ -444,7 +444,7 @@ def nuke(entity: str, missile_mode: bool = False):
 
 
     if use_server_nuke_cmd:
-        return send_cmd_str(f"nuke {entity} {missile_mode}", cmd_prefix="")
+        return send_cmd_str(f"{NUKE_CMD} {entity} {missile_mode}", cmd_prefix="")
 
     for i in range(0, 4):
         x, y, z = get_entity_coordinates(entity)
