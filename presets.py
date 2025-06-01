@@ -1,5 +1,7 @@
 #!/bin/python3
 """This module contains presets for things created using a series of commands, like minigames."""
+from typing import Union
+
 from pycraftCommands import *
 
 
@@ -63,13 +65,13 @@ def death_swap(interval: int = 300, warningMsg: str = "Warning: the next swap wi
 
 def nuclear_mayhem(
         target_mode: str = "all",
-        # Options: "random", "all", or "several_random"
-        warning_time: int = (20, 40),
-        # Single integer or tuple range for warning time
+        # Who to target. Options: "random", "all", or "several_random"
+        warning_time: Union[int, tuple] = (20, 40),
+        # How much time in advance to send warning msg. Can be a single int or a tuple (range) for warning time.
         strike_interval: int = 120,
         # Base time in seconds between strikes
         interval_variation: int = 45
-        # Amount of variation allowed in strike intervals
+        # Seconds of variation allowed in strike intervals
 ):
     """
     Initiates a mini-game where players must shelter from periodic nuclear strikes.
