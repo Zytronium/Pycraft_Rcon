@@ -1,5 +1,7 @@
 #!/bin/python3
-from mcrcon import MCRcon
+import random
+
+from mcrcon import MCRcon, MCRconException
 from sys import argv
 
 # Initialize the server connection setting variables
@@ -148,6 +150,10 @@ def send_cmd_str(command: str, cmd_prefix: str = None):
     Example: "minecraft:" or "forge:"
     :return: the server's response if any (as a string)
     """
+    # test: random chance of raising MCRconException
+    if random.randint(0, 3) == 1:
+        raise MCRconException
+
     # remove leading '/'
     if command[0] == '/':
         command = command[1:]
