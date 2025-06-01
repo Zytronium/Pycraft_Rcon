@@ -18,19 +18,19 @@ INTRVL_VAR = 60       # How much variation in the strike interval (in seconds)
 TRGT_MD = "random"    # Targeting mode. Valid values: "random" (targets a random player), "all" (targets all players), or "several_random" (targets multiple random players)
 
 # RECOVERY SETTINGS
-RECOVERY_WAIT = 5  # Amount of time to wait before attempting to recover. Doubled on first recovery attempt to give error message a better chance at printing to chat
+RECOVERY_WAIT = 5  # Amount of time to wait before attempting to recover.
 
 if __name__ == '__main__':
+    first_try = True
     while True:
         try:
+            if not first_try:
+                printmc("An error has occurred during Nuclear Mayhem. Attempting to recover...", "red", itallic=True)
+                sleep(0.25)
+            first_try = False
             nuclear_mayhem(warning_time=WRNING_TM, strike_interval=STRK_INTRVL,
                            interval_variation=INTRVL_VAR, target_mode=TRGT_MD)
 
         except MCRconException:
-            sleep(RECOVERY_WAIT * 2)  # the exception is likely a timeout error caused by server lag. Sleep for a few seconds to try to wait out the lag.
-            try:
-                printmc("An error has occurred during Nuclear Mayhem. Attempting to recover...", "red", itallic=True)
-                sleep(0.25)
-            except MCRconException:
-                sleep(RECOVERY_WAIT)
-                # Do nothing with MCRcon; this takes us back to the start of the loop
+            sleep(RECOVERY_WAIT)  # the exception is likely a timeout error caused by server lag. Sleep for a few seconds to try to wait out the lag.
+            # Do nothing with MCRcon; this takes us back to the start of the loop
