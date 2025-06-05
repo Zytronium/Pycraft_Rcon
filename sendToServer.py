@@ -3,6 +3,7 @@ import random
 
 from mcrcon import MCRcon, MCRconException
 from sys import argv
+import os
 
 # Initialize the server connection setting variables
 # rcon settings
@@ -16,9 +17,12 @@ NUKE_CMD = None
 # Initialize settings variables
 CONNECTION_SETTINGS_FILE = None
 
+BASE_DIR = os.path.dirname(__file__)  # path to the Pycraft_Rcon folder
+SETTINGS_PATH = os.path.join(BASE_DIR, "settings", "settings")
+
 # Try to read the settings file
 try:
-    with open("settings/settings", 'r') as settings_file:
+    with open(SETTINGS_PATH, 'r') as settings_file:
         for line in settings_file:
             # Strip whitespace and split by colon
             key, value = line.strip().split(':', 1)
@@ -26,14 +30,14 @@ try:
 
             match key:
                 case "server connection settings file":
-                    CONNECTION_SETTINGS_FILE = f"settings/server_connections/{value}"
+                    CONNECTION_SETTINGS_FILE = os.path.join(BASE_DIR, "settings", "server_connections", value)
                 # add more cases here when more settings are added
 except FileNotFoundError:
     # If the file doesn't exist, create it and write the default content
-    with open("settings/settings", 'w') as file:
+    with open(SETTINGS_PATH, 'w') as file:
         file.write("""server connection settings file: default""")
     # Set the default values to the variables
-    CONNECTION_SETTINGS_FILE = "settings/server_connections/default"
+    CONNECTION_SETTINGS_FILE = os.path.join(BASE_DIR, "settings", "server_connections", "default")
 
 
 # Try to read the connection settings from the file
@@ -59,7 +63,7 @@ try:
 
 except FileNotFoundError:
     # If the file doesn't exist, create it and write the default content
-    with open("settings/server_connections/default", 'w') as file:
+    with open(os.path.join(BASE_DIR, "settings", "server_connections", "default"), 'w') as file:
         file.write("""rcon host: localhost\nrcon port: 25575\n""" +
                    """rcon password: change_me\nrequire vanilla cmd prefix: false\n""" +
                    """compatible nuke cmd: false""")
@@ -174,7 +178,7 @@ def send_cmd_str(command: str, cmd_prefix: str = None):
 
 if __name__ == '__main__':
     # Run the function
-    source_file = "commands.txt"
+    source_file = os.path.join(BASE_DIR, "commands.txt")
     if len(argv) < 2:
         print("No source file given. Defaulting to 'commands.txt'")
     else:
