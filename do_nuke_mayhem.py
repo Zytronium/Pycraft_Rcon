@@ -13,9 +13,9 @@ from presets import nuclear_mayhem
 
 # PARAMETER CONSTANTS
 WRNING_TM = (15, 60)  # How many seconds in advance a warning msg is sent in chat before the nuke falls (can be a range (tuple) )
-STRK_INTRVL = 300     # How much time in between nuclear strikes in seconds
-INTRVL_VAR = 60       # How much variation in the strike interval (in seconds)
-TRGT_MD = "random"    # Targeting mode. Valid values: "random" (targets a random player), "all" (targets all players), or "several_random" (targets multiple random players)
+STRK_INTRVL = 450     # How much time in between nuclear strikes in seconds
+INTRVL_VAR = 150      # How much variation in the strike interval (in seconds)
+TRGT_MD = "all"    # Targeting mode. Valid values: "random" (targets a random player), "all" (targets all players), or "several_random" (targets multiple random players)
 
 # RECOVERY SETTINGS
 RECOVERY_WAIT = 5  # Amount of time to wait before attempting to recover.

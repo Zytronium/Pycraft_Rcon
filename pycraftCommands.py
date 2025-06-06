@@ -665,7 +665,7 @@ def nuke_countdown(player: str | list, delay: int = 20, countdown: int = 10):
     elif mode == "several":
         warning_msg += "A SERIES OF NUCLEAR STRIKES HAVE BEEN ORDERED ON SEVERAL PEOPLE. SEEK SHELTER IMMEDIATELY. "
 
-    warning_msg += f"THE MISSILES WILL IMPACT IN APPROXIMATELY {fancy_time(delay, 1, 5, 95)}. THIS IS NOT A DRILL. "
+    warning_msg += f"THE MISSILE{"S" if mode in ["all", "several"] else ""} WILL IMPACT IN APPROXIMATELY {fancy_time(delay, 1, 5, 95).upper()}. THIS IS NOT A DRILL. "
     if randint(0, 29) == 29:  # 1 in 30 chance of adding a dad joke to the warning
         warning_msg += "IT IS A HAMMER. "
 
