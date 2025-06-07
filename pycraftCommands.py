@@ -349,7 +349,7 @@ def set_weather(type: str, duration: int = None, duration_unit: str = ""):
 
     return send_cmd_str(f"/weather {type} {duration if duration is not None else ''}{duration_unit.lower() if duration is not None else ''}")
 
-def summon(entity_type: str, *args, dimension: str = None, custom_prefix: str = "minecraft:", custom_data: dict = None, amount: int = 1, **kwargs):
+def summon(entity_type: str, *args, dimension: str = None, custom_prefix: str = "minecraft:", custom_data: dict = None, amount: int = 1, return_command: bool = False, **kwargs):
     """
     Summons an entity at specified coordinates or at a given entity's position.
 
@@ -359,8 +359,9 @@ def summon(entity_type: str, *args, dimension: str = None, custom_prefix: str = 
     :param custom_prefix: Optional custom prefix for the entity (default is "minecraft:").
     :param custom_data: Optional custom entity data as a dictionary.
     :param amount: The number of entities to spawn (default is 1).
+    :param return_command: If True, return the summon command as a string instead of sending it.
     :param kwargs: Optional keyword arguments for additional flexibility (e.g., tags or other data).
-    :return: Command output from the last command used to summon the entity/entities
+    :return: Command output from the last command used to summon the entity/entities (if run) or the command string (if return_command is True)
     """
     # set default dimension if left as None and no entity given
     if len(args) != 1 and dimension is None:
@@ -396,7 +397,9 @@ def summon(entity_type: str, *args, dimension: str = None, custom_prefix: str = 
         data_tags = ', '.join(f'{key}:{value}' for key, value in kwargs.items())
         summon_command += f" {{{data_tags}}}"
 
-    # Run the command multiple times if amount > 1
+    if return_command:
+        return [summon_command] * amount
+
     output = ""
     for _ in range(amount):
         output = send_cmd_str(summon_command)
@@ -430,33 +433,129 @@ def explode(entity: str):
     """
     return summon("tnt", entity)
 
-def nuke(entity: str, missile_mode: bool = False):
+def nuke(entity: str, missile_mode: bool = False, power: int = 127, spread: int = 3, coords: tuple = None, return_commands: bool = False):
     """
-    blows up the given player for long enough to almost guarantee death and destruction
+    Drops nuclear fireballs on a given player, causing death and destruction
     :param entity: the player or entity to nuke
+    :param spread: how spread out the fireballs creating the nuke can be. Default is 3
+    :param coords: the coordinates to nuke at, or None if nuking the entity instead
+    :param return_commands: if True, return a list of command strings instead of sending them. Default: False
+    :return: None or list of command strings
     """
     # Set to true if the server has a /nuke command compatible with this function
     use_server_nuke_cmd = True if NUKE_CMD != False else False
-
+    use_coords = isinstance(coords, tuple) and len(coords) == 3
 
     if entity == "@r":
         entity = random.choice(get_player_list())
 
-
     if use_server_nuke_cmd:
-        return send_cmd_str(f"{NUKE_CMD} {entity} {missile_mode}", cmd_prefix="")
+        cmd = f"{NUKE_CMD} {entity} {missile_mode}"
+        if return_commands:
+            return [cmd]
+        return send_cmd_str(cmd, cmd_prefix="")
+
+    commands = []
 
     for i in range(0, 4):
-        x, y, z = get_entity_coordinates(entity)
-        x += randint(-3, 3)
+        x, y, z = coords if use_coords else get_entity_coordinates(entity)
+        x += randint(spread * -1, spread)
         y += randint(-3, 3) if not missile_mode else max(345, y + 425)  # if missile mode, summon it at a height calculated to impact the ground in roughly 5 seconds
-        z += randint(-3, 3)
+        z += randint(spread * -1, spread)
         nuke_data = {
-        "Motion": [0.0, -10.0, 0.0],  # Extreme downwards velocity
-        "ExplosionPower": 127,            # Large explosion radius
-        "CustomName": "\"nuke\""          # Name the fireball "nuke"
+        "Motion": [0.0, -10.0, 0.0],       # Extreme downwards velocity
+        "ExplosionPower": min(power, 127), # Large explosion radius
+        "CustomName": "\"nuke\""           # Name the fireball "nuke"
     }
-        summon("fireball", x, y, z, dimension=get_entity_dimension(entity), custom_data=nuke_data)
+
+        commands.extend(
+            summon("fireball", x, y, z, dimension=get_entity_dimension(entity),
+                   custom_data=nuke_data, return_command=True))
+
+    if return_commands:
+        return commands
+    for cmd in commands:
+        send_cmd_str(cmd)
+
+    return None
+
+def orbital_laser(entity: str, intensity: float = 15.0, coords: tuple = None):
+    """
+    Fires an orbital laser beam on the given player, causing death and destruction
+    :param entity: the player or entity to strike
+    :param intensity: intensity of the blast. Default: 15.0
+    :param coords: the coordinates of the blast, or None if striking the entity instead
+    """
+    use_coords = True if isinstance(coords, tuple) and len(coords) == 3 else False
+
+    if entity == "@r":
+        entity = random.choice(get_player_list())
+
+    x, y, z = map(int, coords if use_coords else get_entity_coordinates(entity))
+
+    commands = []
+
+    # Charge actionbar and initial sound
+    commands.append(f"/execute as {entity} at @s run title @s actionbar {{\"text\":\"⚠ ORBITAL STRIKE CHARGING ⚠\",\"color\":\"red\",\"bold\":true}}")
+    commands.append("/execute as @a at @s run playsound minecraft:block.beacon.activate master @s ~ ~ ~ 1 1")
+    send_commands_to_minecraft(command_list=commands)
+
+    # Charging visuals every 0.5 seconds for 5 seconds (10 ticks)
+    for _ in range(10):
+        charging_tick_cmds = [
+            f"/execute positioned {x} {y} {z} run particle dust{{color:[1.0,1.0,0.2],scale:2}} {x} {y + 3} {z} 0 200 0 0.05 500 force"
+        ]
+        send_commands_to_minecraft(command_list=charging_tick_cmds)
+        sleep(0.5)
+
+    # Blast effect
+    blast_cmds = [
+        f"/execute positioned {x} {y} {z} run fill {x - 5} {y - 8} {z - 5} {x + 5} {y + 85} {z + 5} air replace water",
+        f"/execute positioned {x} {y} {z} run fill {x - 2} {y - 4} {z - 2} {x + 2} {y + 80} {z + 2} air replace lava",
+        f"/execute positioned {x} {y} {z} run fill {x - 1} {y - 1} {z - 1} {x + 1} {319} {z + 1} air destroy",
+        f"/execute positioned {x} {y} {z} run particle flash {x} {y} {z} 0 -35 0 0 500000 force",
+        f"/execute positioned {x} {y} {z} run particle dust{{color:[1.0,0.25,0.25],scale:4}} {x} {y + 100} {z} 0 -35 0 0 50000 force",
+        "/execute as @a at @s run playsound minecraft:block.beacon.activate master @s ~ ~ ~ 1 1",
+        "/execute as @a at @s run playsound minecraft:entity.warden.sonic_boom master @s ~ ~ ~ 2 1",
+        f"/execute positioned {x} {y} {z} run playsound minecraft:entity.generic.explode master @a ~ ~ ~ 1 ",
+        "/execute as @a run playsound minecraft:entity.generic.explode master @a ~ ~ ~ 1 1",
+        "/execute as @a run playsound minecraft:entity.lightning_bolt.thunder master @a ~ ~ ~ 10 0.25",
+        "/execute as @a run playsound minecraft:entity.lightning_bolt.thunder master @a ~ ~ ~ 10 1.9",
+        f"/execute positioned {x} {y} {z} run particle explosion_emitter {x} {y + 11} {z} 0 -10 0 0 50 force",
+        f"/execute positioned {x} {y} {z} run particle explosion_emitter {x} {y + 11} {z} 4 -1 -4 0 50 force",
+        f"/execute positioned {x} {y} {z} run particle explosion_emitter {x} {y + 11} {z} -4 -1 4 0 50 force",
+        f"/execute positioned {x} {y} {z} run summon lightning_bolt {x} {y-1} {z}",
+        f"/execute positioned {x} {y} {z} run summon area_effect_cloud {x} {y-1} {z} {{Radius:15f,Duration:130,Particle:\"smoke\"}}",
+        f"/execute positioned {x} {y} {z} run summon area_effect_cloud {x} {y+2} {z} {{Radius:10f,Duration:110,Particle:\"smoke\"}}",
+        f"/execute positioned {x} {y} {z} run summon area_effect_cloud {x} {y+3} {z} {{Radius:3f,Duration:100,Particle:\"smoke\"}}",
+        f"/execute as @e positioned {x} {y} {z} if entity @s[distance=..2] run damage @s 5000 minecraft:generic"
+    ]
+
+    base_damage = intensity * 10
+    max_radius = int(intensity * 10)
+    radial_damage_cmds = [f"/execute as @e positioned {x} {y} {z} if entity @s[distance=..2] run damage @s 5000 minecraft:generic"]
+
+    for r in range(1, min(255, max_radius + 1)):
+        # scale damage down by distance
+        damage = max(1, int(base_damage / (r * 1.5)))
+
+        radial_damage_cmds.append(f"/execute as @e at @s if entity @s[distance={r}..{r+1}] run damage @s {damage} minecraft:generic")
+    if max_radius > 256:
+        radial_damage_cmds.append(f"/execute as @e at @s if entity @s[distance={255}..{max_radius}] run damage @s 1 minecraft:generic")
+
+    blast_cmds.extend(radial_damage_cmds)
+
+    # create additional explosions
+    for i in range(0, min(50, int(intensity / 15) + 1)):
+        blast_cmds.extend(nuke(entity, power=int(intensity), spread=int(intensity / 3), coords=(x, y, z), return_commands=True))
+
+    send_commands_to_minecraft(command_list=blast_cmds)
+
+
+    # add a bit of fire if the previous explosions were too weak to create much fire.
+    summon("fireball", entity, custom_data={"Motion": [0.0, -10.0, 0.0]})
+
+
 
 def list_players():
     """

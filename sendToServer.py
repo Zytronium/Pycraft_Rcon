@@ -115,7 +115,7 @@ def send_commands_to_minecraft(command_file_path: str = None,
                     command = line.strip()
                     if command:
                         # remove leading '/'
-                        if command[0] == '/':
+                        if command.startswith('/'):
                             command = command[1:]
 
                         # set vanilla cmd prefix if needed
@@ -133,7 +133,7 @@ def send_commands_to_minecraft(command_file_path: str = None,
                 command = command.strip()
                 if command:
                     # remove leading '/'
-                    if command[0] == '/':
+                    if command.startswith('/'):
                         command = command[1:]
 
                     # set vanilla cmd prefix if needed
