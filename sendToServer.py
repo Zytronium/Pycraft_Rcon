@@ -126,7 +126,7 @@ def send_commands_to_minecraft(command_file_path: str = None,
 
                         # send the command to the server
                         mcr.command(command)
-                        print(f"Executed: {command}\nServer Response: ", end="")
+                        print(f"Executed: {command}")
         elif mode == "list":
             for command in command_list:
                 # remove any trailing whitespace or newline
@@ -144,7 +144,7 @@ def send_commands_to_minecraft(command_file_path: str = None,
 
                     # send the command to the server
                     mcr.command(command)
-                    print(f"Executed: {command}\nServer Response: ", end="")
+                    print(f"Executed: {command}")
 
 def send_cmd_str(command: str, cmd_prefix: str = None):
     """
@@ -172,7 +172,7 @@ def send_cmd_str(command: str, cmd_prefix: str = None):
         cmd = command.strip()  # Remove any trailing whitespace or newline
         if cmd:
             response = mcr.command(cmd)  # Send the command to the server
-            print(f"\nExecuted:\n{cmd}\n\nServer Response: ")
+            print(f"\nExecuted:\n{cmd}")
             return response
     return None
 

@@ -510,9 +510,9 @@ def orbital_laser(entity: str, intensity: float = 15.0, coords: tuple = None):
 
     # Blast effect
     blast_cmds = [
-        f"/execute positioned {x} {y} {z} run fill {x - 5} {y - 8} {z - 5} {x + 5} {y + 85} {z + 5} air replace water",
-        f"/execute positioned {x} {y} {z} run fill {x - 2} {y - 4} {z - 2} {x + 2} {y + 80} {z + 2} air replace lava",
-        f"/execute positioned {x} {y} {z} run fill {x - 1} {y - 1} {z - 1} {x + 1} {319} {z + 1} air destroy",
+        f"/execute positioned {x} {y} {z} run fill {x - 5} {y - 8} {z - 5} {x + 5} {y + 85} {z + 5} air replace water" if intensity > 2 else "",
+        f"/execute positioned {x} {y} {z} run fill {x - 2} {y - 4} {z - 2} {x + 2} {y + 80} {z + 2} air replace lava" if intensity > 2 else "",
+        f"/execute positioned {x} {y} {z} run fill {(x - 1) if intensity > 3 else x} {(y - 1) if intensity > 4 else y} {(z - 1) if intensity > 3 else z} {(x - 1) if intensity > 4 else x} {319} {(z - 1) if intensity > 4 else z} air destroy" if intensity > 2 else "",
         f"/execute positioned {x} {y} {z} run particle flash {x} {y} {z} 0 -35 0 0 500000 force",
         f"/execute positioned {x} {y} {z} run particle dust{{color:[1.0,0.25,0.25],scale:4}} {x} {y + 100} {z} 0 -35 0 0 50000 force",
         "/execute as @a at @s run playsound minecraft:block.beacon.activate master @s ~ ~ ~ 1 1",
@@ -527,13 +527,12 @@ def orbital_laser(entity: str, intensity: float = 15.0, coords: tuple = None):
         f"/execute positioned {x} {y} {z} run summon lightning_bolt {x} {y-1} {z}",
         f"/execute positioned {x} {y} {z} run summon area_effect_cloud {x} {y-1} {z} {{Radius:15f,Duration:130,Particle:\"smoke\"}}",
         f"/execute positioned {x} {y} {z} run summon area_effect_cloud {x} {y+2} {z} {{Radius:10f,Duration:110,Particle:\"smoke\"}}",
-        f"/execute positioned {x} {y} {z} run summon area_effect_cloud {x} {y+3} {z} {{Radius:3f,Duration:100,Particle:\"smoke\"}}",
-        f"/execute as @e positioned {x} {y} {z} if entity @s[distance=..2] run damage @s 5000 minecraft:generic"
+        f"/execute positioned {x} {y} {z} run summon area_effect_cloud {x} {y+3} {z} {{Radius:3f,Duration:100,Particle:\"smoke\"}}"
     ]
 
     base_damage = intensity * 10
     max_radius = int(intensity * 10)
-    radial_damage_cmds = [f"/execute as @e positioned {x} {y} {z} if entity @s[distance=..2] run damage @s 5000 minecraft:generic"]
+    radial_damage_cmds = [f"/execute as @e positioned {x} {y} {z} if entity @s[distance=..2] run damage @s {intensity * 20 if intensity > 4 else intensity * 3} minecraft:generic"]
 
     for r in range(1, min(255, max_radius + 1)):
         # scale damage down by distance
