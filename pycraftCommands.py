@@ -6,6 +6,8 @@ from random import randint
 from time import sleep
 from numbers import Number
 from sendToServer import send_cmd_str, send_commands_to_minecraft, NUKE_CMD
+from typing import Optional
+import asyncio
 
 
 def fancy_time(seconds: int, round_minutes_to: int | float = 1, round_seconds_to: int = 1, min_round_sec_to_min: int = 51) -> str:
@@ -479,7 +481,7 @@ def nuke(entity: str, missile_mode: bool = False, power: int = 127, spread: int 
 
     return None
 
-def orbital_laser(entity: str, intensity: float = 15.0, coords: tuple = None):
+async def orbital_laser(entity: str, intensity: float = 15.0, coords: tuple = None, dimension: Optional[str] = None):
     """
     Fires an orbital laser beam on the given player, causing death and destruction
     :param entity: the player or entity to strike
@@ -487,11 +489,14 @@ def orbital_laser(entity: str, intensity: float = 15.0, coords: tuple = None):
     :param coords: the coordinates of the blast, or None if striking the entity instead
     """
     use_coords = True if isinstance(coords, tuple) and len(coords) == 3 else False
+    dimension = get_entity_dimension(entity) if entity is not None else "overworld" if dimension is None else dimension
 
     if entity == "@r":
         entity = random.choice(get_player_list())
 
     x, y, z = map(int, coords if use_coords else get_entity_coordinates(entity))
+
+    y = round(await get_floor_coord(x, y, z, dimension))
 
     commands = []
 
@@ -500,8 +505,8 @@ def orbital_laser(entity: str, intensity: float = 15.0, coords: tuple = None):
     commands.append("/execute as @a at @s run playsound minecraft:block.beacon.activate master @s ~ ~ ~ 1 1")
     send_commands_to_minecraft(command_list=commands)
 
-    # Charging visuals every 0.5 seconds for 5 seconds (10 ticks)
-    for _ in range(10):
+    # Charging visuals every 0.5 seconds for 3 seconds (6 ticks)
+    for _ in range(6):
         charging_tick_cmds = [
             f"/execute positioned {x} {y} {z} run particle dust{{color:[1.0,1.0,0.2],scale:2}} {x} {y + 3} {z} 0 200 0 0.05 500 force"
         ]
@@ -510,49 +515,54 @@ def orbital_laser(entity: str, intensity: float = 15.0, coords: tuple = None):
 
     # Blast effect
     blast_cmds = [
-        f"/execute positioned {x} {y} {z} run fill {x - 5} {y - 8} {z - 5} {x + 5} {y + 85} {z + 5} air replace water" if intensity > 2 else "",
+        f"/execute positioned {x} {y} {z} run fill {x - 5} {y - 8} {z - 5} {x + 5} {y + 85} {z + 5} air replace water" if intensity > 0 else "",
         f"/execute positioned {x} {y} {z} run fill {x - 2} {y - 4} {z - 2} {x + 2} {y + 80} {z + 2} air replace lava" if intensity > 2 else "",
-        f"/execute positioned {x} {y} {z} run fill {(x - 1) if intensity > 3 else x} {(y - 1) if intensity > 4 else y} {(z - 1) if intensity > 3 else z} {(x - 1) if intensity > 4 else x} {319} {(z - 1) if intensity > 4 else z} air destroy" if intensity > 2 else "",
-        f"/execute positioned {x} {y} {z} run particle flash {x} {y} {z} 0 -35 0 0 500000 force",
+        f"/execute positioned {x} {y} {z} run fill {(x - 1) if intensity > 3 else x} {(y - 1) if intensity > 4 else y} {(z + 1) if intensity > 3 else z} {(x + 1) if intensity > 4 else x} {319} {(z - 1) if intensity > 4 else z} air" if intensity > 2 else "",
         f"/execute positioned {x} {y} {z} run particle dust{{color:[1.0,0.25,0.25],scale:4}} {x} {y + 100} {z} 0 -35 0 0 50000 force",
+        f"/execute positioned {x} {y} {z} run particle flash {x} {y} {z} 0 -35 0 0 500000 force",
         "/execute as @a at @s run playsound minecraft:block.beacon.activate master @s ~ ~ ~ 1 1",
-        "/execute as @a at @s run playsound minecraft:entity.warden.sonic_boom master @s ~ ~ ~ 2 1",
-        f"/execute positioned {x} {y} {z} run playsound minecraft:entity.generic.explode master @a ~ ~ ~ 1 ",
-        "/execute as @a run playsound minecraft:entity.generic.explode master @a ~ ~ ~ 1 1",
-        "/execute as @a run playsound minecraft:entity.lightning_bolt.thunder master @a ~ ~ ~ 10 0.25",
-        "/execute as @a run playsound minecraft:entity.lightning_bolt.thunder master @a ~ ~ ~ 10 1.9",
-        f"/execute positioned {x} {y} {z} run particle explosion_emitter {x} {y + 11} {z} 0 -10 0 0 50 force",
-        f"/execute positioned {x} {y} {z} run particle explosion_emitter {x} {y + 11} {z} 4 -1 -4 0 50 force",
-        f"/execute positioned {x} {y} {z} run particle explosion_emitter {x} {y + 11} {z} -4 -1 4 0 50 force",
-        f"/execute positioned {x} {y} {z} run summon lightning_bolt {x} {y-1} {z}",
-        f"/execute positioned {x} {y} {z} run summon area_effect_cloud {x} {y-1} {z} {{Radius:15f,Duration:130,Particle:\"smoke\"}}",
-        f"/execute positioned {x} {y} {z} run summon area_effect_cloud {x} {y+2} {z} {{Radius:10f,Duration:110,Particle:\"smoke\"}}",
-        f"/execute positioned {x} {y} {z} run summon area_effect_cloud {x} {y+3} {z} {{Radius:3f,Duration:100,Particle:\"smoke\"}}"
+        "/execute as @a at @s run playsound minecraft:entity.warden.sonic_boom master @s ~ ~ ~ 2 1" if intensity > 0 else "",
+        "/execute as @a run playsound minecraft:entity.generic.explode master @a ~ ~ ~ 1 1" if intensity > 2 else "",
+        "/execute as @a run playsound minecraft:entity.lightning_bolt.thunder master @a ~ ~ ~ 10 0.25" if intensity > 1 else "",
+        "/execute as @a run playsound minecraft:entity.lightning_bolt.thunder master @a ~ ~ ~ 10 1.9" if intensity > 1 else "",
+        f"/execute positioned {x} {y} {z} run particle flash {x} {y} {z} 0 -35 0 0 500000 force" if intensity > 0 else "",
+        f"/execute positioned {x} {y} {z} run particle explosion_emitter {x} {y + 11} {z} 0 -10 0 0 50 force" if intensity > 2 else "",
+        f"/execute positioned {x} {y} {z} run particle explosion_emitter {x} {y + 11} {z} 4 -1 -4 0 50 force" if intensity > 2 else "",
+        f"/execute positioned {x} {y} {z} run particle explosion_emitter {x} {y + 11} {z} -4 -1 4 0 50 force" if intensity > 2 else ""
     ]
 
     base_damage = intensity * 10
     max_radius = int(intensity * 10)
-    radial_damage_cmds = [f"/execute as @e positioned {x} {y} {z} if entity @s[distance=..2] run damage @s {intensity * 20 if intensity > 4 else intensity * 3} minecraft:generic"]
+    radial_damage_cmds = [f"/execute as @e positioned {x} {y} {z} if entity @s[distance=..2] run damage @s {intensity * 20 if intensity > 4 else intensity * 3} minecraft:in_fire"]  # in_fire because they were vaporized
 
     for r in range(1, min(255, max_radius + 1)):
         # scale damage down by distance
         damage = max(1, int(base_damage / (r * 1.5)))
 
-        radial_damage_cmds.append(f"/execute as @e at @s if entity @s[distance={r}..{r+1}] run damage @s {damage} minecraft:generic")
+        radial_damage_cmds.append(f"/execute as @e at @s if entity @s[distance={r}..{r+1}] run damage @s {damage} minecraft:explosion")
     if max_radius > 256:
-        radial_damage_cmds.append(f"/execute as @e at @s if entity @s[distance={255}..{max_radius}] run damage @s 1 minecraft:generic")
+        radial_damage_cmds.append(f"/execute as @e at @s if entity @s[distance={255}..{max_radius}] run damage @s 1 minecraft:explosion")
 
     blast_cmds.extend(radial_damage_cmds)
 
     # create additional explosions
-    for i in range(0, min(50, int(intensity / 15) + 1)):
+    for i in range(0, min(50, int(intensity / 15.0) + 1)):
         blast_cmds.extend(nuke(entity, power=int(intensity), spread=int(intensity / 3), coords=(x, y, z), return_commands=True))
 
     send_commands_to_minecraft(command_list=blast_cmds)
 
 
     # add a bit of fire if the previous explosions were too weak to create much fire.
-    summon("fireball", entity, custom_data={"Motion": [0.0, -10.0, 0.0]})
+    if intensity > 0:
+        summon("fireball", x, y, z, custom_data={"Motion": [0.0, -10.0, 0.0]})
+
+    sleep(1 * max(intensity / 3.0, 1))
+    impact_floor = await get_floor_coord(x, y, z, dimension)
+
+    send_commands_to_minecraft(command_list=[
+        f"/execute positioned {x} {y} {z} run summon area_effect_cloud {x} {impact_floor-1} {z} {{Radius:15f,Duration:120,Particle:\"smoke\"}}" if intensity > 3 else f"/execute positioned {x} {y} {z} run summon area_effect_cloud {x} {impact_floor} {z} {{Radius:3f,Duration:50,Particle:\"smoke\"}}",
+        f"/execute positioned {x} {y} {z} run summon area_effect_cloud {x} {impact_floor+2} {z} {{Radius:10f,Duration:100,Particle:\"smoke\"}}" if intensity > 3 else "",
+        f"/execute positioned {x} {y} {z} run summon area_effect_cloud {x} {impact_floor+3} {z} {{Radius:3f,Duration:90,Particle:\"smoke\"}}" if intensity > 3 else ""])
 
 
 
@@ -667,6 +677,36 @@ def get_entity_dimension(entity):
 
 def get_random_player():
     return get_player_list()[random.randint(0, len(get_player_list()) - 1)]
+
+async def get_floor_coord(x: int, y: Optional[int], z: int, dimension: str) -> float:
+    """
+    Gets the Y coord of the first solid block below the given coordinates.
+    :param x: The X coordinate.
+    :param y: The Y coordinate. Defaults to 319 (build limit) if specified as None
+    :param z: The Z coordinate.
+    :return: The Y coordinate of the first solid block below the given coordinates as a float.
+    """
+    if y is None:
+        y = 319
+
+    # Summon falling armor stand
+    summon("armor_stand", x, y, z, dimension=dimension, custom_data={"Invisible":"1b", "Marker":"0b", "Invulnerable":"1b", "NoGravity":"0b", "Tags":["ground_probe"],"Motion":[0, -10, 0]})
+
+    # Sleep loop until the armor stand lands
+    falling = True
+    current_y = y
+    while falling and current_y > -64:
+        await asyncio.sleep(0.5)
+
+        current_y = float(run(f"execute in {dimension} positioned {x} {current_y} {z} run data get entity @e[type=armor_stand,tag=ground_probe,limit=1,sort=nearest] Pos[1]").split(": ")[1].replace("d", ""))
+        falling_speed = round(float(run(f"execute in {dimension} positioned {x} {current_y} {z} run data get entity @e[type=armor_stand,tag=ground_probe,limit=1,sort=nearest] Motion[1]").split(": ")[1].replace("d", "")))
+        print(falling_speed)
+        falling = falling_speed != 0
+
+    # Clean up the armor stand
+    run(f"execute in {dimension} positioned {x} {current_y} {z} run kill @e[type=armor_stand,tag=ground_probe,limit=1,sort=nearest]")
+
+    return current_y - 1  # Floor block should be below the armor stand
 
 def troll_all_players():
     """

@@ -1,10 +1,12 @@
 #!/bin/python3
 """
 Run this file to initiate the Nuclear Mayhem minigame.
-This script will initiate the Nuclear Mayhem minigame, and in the case that it encounters an error, it will try to recover.
+This script will initiate the Nuclear Mayhem minigame,
+and in the case that it encounters an error, it will try to recover.
 Custom parameters have been set. You are free to adjust them.
 
-This script exists alongside main.py so that you can run multiple gamemodes at the same time.
+This script exists alongside main.py so that you can run
+multiple gamemodes at the same time.
 """
 from mcrcon import MCRconException
 from pycraftCommands import printmc
@@ -15,7 +17,7 @@ from presets import nuclear_mayhem
 WRNING_TM = (15, 60)  # How many seconds in advance a warning msg is sent in chat before the nuke falls (can be a range (tuple) )
 STRK_INTRVL = 120     # How much time in between nuclear strikes in seconds
 INTRVL_VAR = 150      # How much variation in the strike interval (in seconds)
-TRGT_MD = "all"    # Targeting mode. Valid values: "random" (targets a random player), "all" (targets all players), or "several_random" (targets multiple random players)
+TRGT_MD = "all"       # Targeting mode. Valid values: "random" (targets a random player), "all" (targets all players), or "several_random" (targets multiple random players)
 
 # RECOVERY SETTINGS
 RECOVERY_WAIT = 5  # Amount of time to wait before attempting to recover.
