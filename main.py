@@ -54,7 +54,8 @@ if __name__ == "__main__":
     # make your script here
     printmc("Pycraft Rcon script running.", "green", True)
     sleep(1)
-    hello_world()
+    # hello_world()
+    asyncio.run(orbital_laser("Zytronium", 15))
     # smite("Zytronium")
 
     # nuclear_mayhem(strike_interval=20, target_mode="random")

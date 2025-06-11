@@ -2,6 +2,7 @@
 """Module for python functions that perform Minecraft commands and send them to a running minecraft server via rcon"""
 import re
 import random
+from itertools import product
 from random import randint
 from time import sleep
 from numbers import Number
@@ -481,6 +482,17 @@ def nuke(entity: str, missile_mode: bool = False, power: int = 127, spread: int 
 
     return None
 
+
+def get_all_coords_in_area(range1: tuple[int, int, int], range2: tuple[int, int, int]) -> list[tuple[int, int, int]]:
+    x1, y1, z1 = range1
+    x2, y2, z2 = range2
+    return list(product(
+        range(min(x1, x2), max(x1, x2) + 1),
+        range(min(y1, y2), max(y1, y2) + 1),
+        range(min(z1, z2), max(z1, z2) + 1)
+    ))
+
+
 async def orbital_laser(entity: str, intensity: float = 15.0, coords: tuple = None, dimension: Optional[str] = None):
     """
     Fires an orbital laser beam on the given player, causing death and destruction
@@ -498,12 +510,11 @@ async def orbital_laser(entity: str, intensity: float = 15.0, coords: tuple = No
 
     y = round(await get_floor_coord(x, y, z, dimension))
 
-    commands = []
-
     # Charge actionbar and initial sound
-    commands.append(f"/execute as {entity} at @s run title @s actionbar {{\"text\":\"⚠ ORBITAL STRIKE CHARGING ⚠\",\"color\":\"red\",\"bold\":true}}")
-    commands.append("/execute as @a at @s run playsound minecraft:block.beacon.activate master @s ~ ~ ~ 1 1")
-    send_commands_to_minecraft(command_list=commands)
+    send_commands_to_minecraft(command_list=[
+        f"/execute as {entity} at @s run title @s actionbar {{\"text\":\"⚠ ORBITAL STRIKE CHARGING ⚠\",\"color\":\"red\",\"bold\":true}}",
+        "/execute as @a at @s run playsound minecraft:block.beacon.activate master @s ~ ~ ~ 1 1"
+    ])
 
     # Charging visuals every 0.5 seconds for 3 seconds (6 ticks)
     for _ in range(6):
@@ -515,21 +526,58 @@ async def orbital_laser(entity: str, intensity: float = 15.0, coords: tuple = No
 
     # Blast effect
     blast_cmds = [
-        f"/execute positioned {x} {y} {z} run fill {x - 5} {y - 8} {z - 5} {x + 5} {y + 85} {z + 5} air replace water" if intensity > 0 else "",
-        f"/execute positioned {x} {y} {z} run fill {x - 2} {y - 4} {z - 2} {x + 2} {y + 80} {z + 2} air replace lava" if intensity > 2 else "",
-        f"/execute positioned {x} {y} {z} run fill {(x - 1) if intensity > 3 else x} {(y - 1) if intensity > 4 else y} {(z + 1) if intensity > 3 else z} {(x + 1) if intensity > 4 else x} {319} {(z - 1) if intensity > 4 else z} air" if intensity > 2 else "",
         f"/execute positioned {x} {y} {z} run particle dust{{color:[1.0,0.25,0.25],scale:4}} {x} {y + 100} {z} 0 -35 0 0 50000 force",
-        f"/execute positioned {x} {y} {z} run particle flash {x} {y} {z} 0 -35 0 0 500000 force",
-        "/execute as @a at @s run playsound minecraft:block.beacon.activate master @s ~ ~ ~ 1 1",
-        "/execute as @a at @s run playsound minecraft:entity.warden.sonic_boom master @s ~ ~ ~ 2 1" if intensity > 0 else "",
-        "/execute as @a run playsound minecraft:entity.generic.explode master @a ~ ~ ~ 1 1" if intensity > 2 else "",
-        "/execute as @a run playsound minecraft:entity.lightning_bolt.thunder master @a ~ ~ ~ 10 0.25" if intensity > 1 else "",
-        "/execute as @a run playsound minecraft:entity.lightning_bolt.thunder master @a ~ ~ ~ 10 1.9" if intensity > 1 else "",
-        f"/execute positioned {x} {y} {z} run particle flash {x} {y} {z} 0 -35 0 0 500000 force" if intensity > 0 else "",
-        f"/execute positioned {x} {y} {z} run particle explosion_emitter {x} {y + 11} {z} 0 -10 0 0 50 force" if intensity > 2 else "",
-        f"/execute positioned {x} {y} {z} run particle explosion_emitter {x} {y + 11} {z} 4 -1 -4 0 50 force" if intensity > 2 else "",
-        f"/execute positioned {x} {y} {z} run particle explosion_emitter {x} {y + 11} {z} -4 -1 4 0 50 force" if intensity > 2 else ""
-    ]
+        f"/execute positioned {x} {y} {z} run particle flash {x} {y} {z} 0 -35 0 0 500000 force"
+        ]
+
+
+    if intensity > 2:
+        # Calculate the area of blocks that will be vaporized by the laser based on intensity
+        x1 = (x - 1) if intensity > 4 else x
+        y1 = (y - 1) if intensity > 5 else y
+        z1 = (z + 1) if intensity > 4 else z
+
+        x2 = (x + 1) if intensity > 6 else x
+        y2 = 319
+        z2 = (z - 1) if intensity > 6 else z
+
+        i = 0
+
+        # Break most blocks in the laser's path except barriers, bedrock, and obsidian
+        for pos_x, pos_y, pos_z in reversed(get_all_coords_in_area((x1, y1, z1), (x2, y2, z2))):
+            blast_cmds.append(
+                f"execute in {dimension} positioned {pos_x} {pos_y} {pos_z} "
+                f"unless block ~ ~ ~ minecraft:obsidian "
+                f"unless block ~ ~ ~ minecraft:bedrock "
+                f"unless block ~ ~ ~ minecraft:barrier "
+                f"run setblock ~ ~ ~ air{' destroy' if randint(0, 100) == 0 else ''}"
+            )
+            if i % 750 == 0:
+                blast_cmds.extend([
+                    f"execute positioned {x} {y} {z} run particle flash {x} {y} {z} 0 -35 0 0 500000 force",
+                    "execute as @a run playsound minecraft:entity.lightning_bolt.thunder master @a ~ ~ ~ 10 0.25" if intensity > 1 else ""
+                ])
+            if i % 500 == 0:
+
+                blast_cmds.extend([
+                    "execute as @a at @s run playsound minecraft:block.beacon.activate master @s ~ ~ ~ 1 1",
+                    f"/execute positioned {x} {y} {z} run particle dust{{color:[1.0,0.25,0.25],scale:4}} {x} {y + 100} {z} 0 -35 0 0 50000 force"
+                ])
+            i += 1
+
+        blast_cmds.extend([
+            f"/execute positioned {x} {y} {z} run particle flash {x} {y} {z} 0 -35 0 0 500000 force"
+            f"/execute positioned {x} {y} {z} run fill {x - 5} {y - 8} {z - 5} {x + 5} {y + 85} {z + 5} air replace water" if intensity > 0 else "",
+            f"/execute positioned {x} {y} {z} run fill {x - 2} {y - 4} {z - 2} {x + 2} {y + 80} {z + 2} air replace lava" if intensity > 2 else "",
+            "/execute as @a at @s run playsound minecraft:entity.warden.sonic_boom master @s ~ ~ ~ 2 1" if intensity > 0 else "",
+            "/execute as @a run playsound minecraft:entity.generic.explode master @a ~ ~ ~ 1 1" if intensity > 2 else "",
+            "/execute as @a run playsound minecraft:entity.lightning_bolt.thunder master @a ~ ~ ~ 10 0.25" if intensity > 1 else "",
+            "/execute as @a run playsound minecraft:entity.lightning_bolt.thunder master @a ~ ~ ~ 10 1.9" if intensity > 1 else "",
+            f"/execute positioned {x} {y} {z} run particle flash {x} {y} {z} 0 -35 0 0 500000 force" if intensity > 0 else "",
+            f"/execute positioned {x} {y} {z} run particle explosion_emitter {x} {y + 11} {z} 0 -10 0 0 50 force" if intensity > 2 else "",
+            f"/execute positioned {x} {y} {z} run particle explosion_emitter {x} {y + 11} {z} 4 -1 -4 0 50 force" if intensity > 2 else "",
+            f"/execute positioned {x} {y} {z} run particle explosion_emitter {x} {y + 11} {z} -4 -1 4 0 50 force" if intensity > 2 else ""
+        ])
 
     base_damage = intensity * 10
     max_radius = int(intensity * 10)
@@ -548,6 +596,11 @@ async def orbital_laser(entity: str, intensity: float = 15.0, coords: tuple = No
     # create additional explosions
     for i in range(0, min(50, int(intensity / 15.0) + 1)):
         blast_cmds.extend(nuke(entity, power=int(intensity), spread=int(intensity / 3), coords=(x, y, z), return_commands=True))
+
+    # remove empty commands
+    for cmd in blast_cmds:
+        if not cmd.strip():
+            blast_cmds.remove(cmd)
 
     send_commands_to_minecraft(command_list=blast_cmds)
 
